@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AuthModule } from './auth.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
@@ -13,6 +14,13 @@ async function bootstrap() {
       },
     },
   );
+  app.useGlobalPipes(new ValidationPipe(
+    {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    },
+  ));
   await app.listen();
   console.log('Auth microservice is running');
 }
