@@ -1,0 +1,134 @@
+# version: '3.8'
+
+# services:
+#   # Database
+#   postgres:
+#     image: postgres:15-alpine
+#     container_name: backend-postgres
+#     environment:
+#       POSTGRES_USER: user
+#       POSTGRES_PASSWORD: password
+#       POSTGRES_DB: backend_services
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#       - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+#     networks:
+#       - backend-network
+
+#   # Redis for caching and sessions
+#   redis:
+#     image: redis:7-alpine
+#     container_name: backend-redis
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis_data:/data
+#     networks:
+#       - backend-network
+
+#   # Gateway Service
+#   gateway:
+#     build:
+#       context: .
+#       dockerfile: docker/gateway.Dockerfile
+#     container_name: backend-gateway
+#     ports:
+#       - "3000:3000"
+#     env_file:
+#       - ./env/.gateway.env
+#     depends_on:
+#       - postgres
+#       - redis
+#       - auth-ms
+#       - user-ms
+#     volumes:
+#       - ./apps/gateway:/app/apps/gateway
+#       - ./libs:/app/libs
+#       - /app/node_modules
+#     networks:
+#       - backend-network
+#     restart: unless-stopped
+
+#   # User Microservice
+#   user-ms:
+#     build:
+#       context: .
+#       dockerfile: docker/user-ms.Dockerfile
+#     container_name: backend-user-ms
+#     ports:
+#       - "3001:3001"
+#     env_file:
+#       - ./env/.user-ms.env
+#     depends_on:
+#       - postgres
+#       - redis
+#     volumes:
+#       - ./apps/user-ms:/app/apps/user-ms
+#       - ./libs:/app/libs
+#       - /app/node_modules
+#     networks:
+#       - backend-network
+#     restart: unless-stopped
+
+#   # Auth Microservice
+#   auth-ms:
+#     build:
+#       context: .
+#       dockerfile: docker/auth-ms.Dockerfile
+#     container_name: backend-auth-ms
+#     ports:
+#       - "3002:3002"
+#     env_file:
+#       - ./env/.auth-ms.env
+#     depends_on:
+#       - postgres
+#       - redis
+#     volumes:
+#       - ./apps/auth-ms:/app/apps/auth-ms
+#       - ./libs:/app/libs
+#       - /app/node_modules
+#     networks:
+#       - backend-network
+#     restart: unless-stopped
+
+# volumes:
+#   postgres_data:
+#   redis_data:
+
+# networks:
+#   backend-network:
+#     driver: bridge
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+    ports:
+      - '3000:3000'
+    env_file:
+      - ./env/.gateway.env
+    depends_on:
+      - user-ms
+      - auth-ms
+
+  user-ms:
+    build:
+      context: .
+      dockerfile: docker/user-ms.Dockerfile
+    env_file:
+      - ./env/.user-ms.env
+    expose:
+      - '4001'
+
+  auth-ms:
+    build:
+      context: .
+      dockerfile: docker/auth-ms.Dockerfile
+    env_file:
+      - ./env/.auth-ms.env
+    expose:
+      - '4000'
