@@ -17,7 +17,7 @@ import { UsersController } from './users/users.controller';
         },
       },
     {
-      name: 'USERS_SERVICE',
+      name: 'USER_SERVICE',
       transport: Transport.TCP,
       options: {
         host: '127.0.0.1',

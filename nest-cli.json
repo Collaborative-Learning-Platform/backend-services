@@ -10,13 +10,13 @@
   "monorepo": true,
   "root": "apps/backend-services",
   "projects": {
-    "auth": {
+    "auth-ms": {
       "type": "application",
-      "root": "apps/auth",
+      "root": "apps/auth-ms",
       "entryFile": "main",
-      "sourceRoot": "apps/auth/src",
+      "sourceRoot": "apps/auth-ms/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/auth/tsconfig.app.json"
+        "tsConfigPath": "apps/auth-ms/tsconfig.app.json"
       }
     },
     "gateway": {
@@ -28,13 +28,13 @@
         "tsConfigPath": "apps/gateway/tsconfig.app.json"
       }
     },
-    "user": {
+    "user-ms": {
       "type": "application",
-      "root": "apps/user",
+      "root": "apps/user-ms",
       "entryFile": "main",
-      "sourceRoot": "apps/user/src",
+      "sourceRoot": "apps/user-ms/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/user/tsconfig.app.json"
+        "tsConfigPath": "apps/user-ms/tsconfig.app.json"
       }
     }
   }
