@@ -1,5 +1,5 @@
 // apps/gateway/src/auth.controller.ts
-import { Controller, Post, Body, Inject } from '@nestjs/common';
+import { Controller, Post, Body, Inject, HttpException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 
 
@@ -9,12 +9,16 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() data) {
-    console.log("first")
-    try{
-      return this.authClient.send({ cmd: 'auth_login' }, data);
-    }
-    catch(error){
-      console.log(error);
+    try {
+      // Convert Observable to Promise to catch errors
+      const { lastValueFrom } = await import('rxjs');
+      return await lastValueFrom(this.authClient.send({ cmd: 'auth_login' }, data));
+    } catch (error) {
+      // Forward the error from the microservice, or default to 500
+      console.log(error)
+      const status = error?.status || 500;
+      const message = error?.response?.message || error?.message || 'Internal server error';
+      throw new HttpException(message, status);
     }
   }
 }

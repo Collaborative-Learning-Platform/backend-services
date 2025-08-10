@@ -14,7 +14,6 @@ export class AuthController {
 
   @MessagePattern({ cmd: 'auth_login' })
   login(@Payload() data: LoginDto) {
-    console.log("came here")
     // In a real app, you should create and use a DTO here instead of `any`
     return this.authService.validateUser(data);
   }
