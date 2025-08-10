@@ -7,10 +7,7 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Get()
-  getHello(): string {
-    return this.authService.getHello();
-  }
+
 
   @MessagePattern({ cmd: 'auth_login' })
   login(@Payload() data: LoginDto) {
