@@ -1,15 +1,19 @@
 // apps/gateway/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { GatewayModule } from './gateway.module';
+import * as cookieparser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(GatewayModule);
+
+  app.use(cookieparser())
   
   app.enableCors({
     origin: 'http://localhost:5173',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
+    
   });
 
   await app.listen(3000);
