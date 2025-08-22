@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  getHello(): string {
-    return 'Hello World!';
-  }
 
-  validateUser(credentials: any) {
+
+  validateUser(credentials:LoginDto) {
     // TODO: Logic to validate user credentials against a database
     console.log('Auth service received credentials:', credentials);
 

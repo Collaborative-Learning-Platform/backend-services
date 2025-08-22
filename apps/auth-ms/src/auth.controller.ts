@@ -7,14 +7,10 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Get()
-  getHello(): string {
-    return this.authService.getHello();
-  }
+
 
   @MessagePattern({ cmd: 'auth_login' })
   login(@Payload() data: LoginDto) {
-    console.log("came here")
     // In a real app, you should create and use a DTO here instead of `any`
     return this.authService.validateUser(data);
   }
