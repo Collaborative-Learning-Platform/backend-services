@@ -32,7 +32,7 @@ import { RefreshToken } from './entity/refreshToken.entity';
       RefreshToken
     ]),
     JwtModule.register({
-      secret: 'your_jwt_secret', 
+      secret: process.env.JWT_SECRET, 
       signOptions: { expiresIn: '1h' }, 
     }),
   ],
