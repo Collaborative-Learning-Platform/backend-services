@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: process.cwd() + '/env/.auth-ms.env' });
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -13,12 +15,12 @@ import { RefreshToken } from './entity/refreshToken.entity';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'learni-theekshana-test.g.aivencloud.com',
-      port: 10855,
-      username: 'avnadmin',
-      password: 'AVNS_5owkLIf6H1Lt3LARpFp',
-      database: 'defaultdb',
-      entities: [User,RefreshToken],
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      entities: [User, RefreshToken],
       synchronize: true,
       ssl: {
         // ca: fs.readFileSync(path.resolve(process.cwd(), 'env', 'aiven-ca.crt')).toString(),
