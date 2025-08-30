@@ -28,6 +28,15 @@
         "tsConfigPath": "apps/gateway/tsconfig.app.json"
       }
     },
+    "notification-ms": {
+      "type": "application",
+      "root": "apps/notification-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/notification-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/notification-ms/tsconfig.app.json"
+      }
+    },
     "user-ms": {
       "type": "application",
       "root": "apps/user-ms",
