@@ -3,7 +3,9 @@ import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
-
+import { JwtModule } from '@nestjs/jwt';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: process.cwd() + '/env/.gateway.env' });
 
 @Module({
   imports: [
@@ -25,6 +27,10 @@ import { UsersController } from './users/users.controller';
       },
     },
     ]),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET, 
+      signOptions: { expiresIn: '1h' }, 
+    }),
   ],
   controllers: [AuthController, UsersController],
 })
