@@ -19,6 +19,7 @@ import { lastValueFrom } from 'rxjs';
 export class AuthController {
   constructor(@Inject('AUTH_SERVICE') private readonly authClient: ClientProxy) {}
 
+  
   @Post('login')
   async login(
     @Body() data: { email: string; password: string },
@@ -32,25 +33,33 @@ export class AuthController {
     );
 
     console.log(response)
+
     // Microservice can return { error: { statusCode, message } }
     if (response?.error) {
-      throw new HttpException(
-        response.error.message || 'Login failed',
-        response.error.statusCode || 400,
-      );
+      // throw new HttpException(
+      //   response.error.message || 'Login failed',
+      //   response.error.statusCode || 400,
+      // );
+      const ret = {
+        success: false,
+        message: response.error.message || 'Login failed',
+        status: response.error.statusCode || 400,
+      }
+      return res.json(ret);
     }
 
-    if (!response?.access_token || !response?.refresh_token) {
-      throw new HttpException('Invalid auth response', 500);
+
+
+    if (!response.success) {
+      return response;
     }
 
-    
     this.setAuthCookies(res, response.access_token, response.refresh_token);
 
     
     return res.json({
-       message: 'success' ,
-       role:response.role, 
+       success: true,
+       role:response.role,
        user_id:response.id
       });
   }
@@ -62,16 +71,30 @@ export class AuthController {
     );
 
     if (response?.error) {
-      throw new HttpException(response.error.message || 'Refresh failed', response.error.statusCode || 401);
+      // throw new HttpException(
+      //   response.error.message || 'Login failed',
+      //   response.error.statusCode || 400,
+      // );
+      const ret = {
+        success: false,
+        message: response.error.message || 'Login failed',
+        status: response.error.statusCode || 400,
+      }
+      return res.json(ret);
     }
 
     if (!response?.access_token || !response?.refresh_token) {
-      throw new HttpException('Invalid refresh response', 500);
+       return res.json({
+         success: false,
+         message: 'Invalid refresh response',
+         status: 500,
+       });
     }
 
     this.setAuthCookies(res, response.access_token, response.refresh_token);
 
     return res.json({
+      success: true,
       message: 'Token refreshed successfully',
       role: response.role,
       user_id: response.id,
@@ -114,17 +137,21 @@ export class AuthController {
       mimetype: file.mimetype,
       buffer: file.buffer,
     };
-    console.log('Received file for bulk upload:', fileData.buffer.toString('utf8'));
+    // console.log('Received file for bulk upload:', fileData.buffer.toString('utf8'));
     const response = await lastValueFrom(
       this.authClient.send({ cmd: 'bulk_register_file' }, fileData)
     );
 
-    if (response?.error) {
-      throw new HttpException(
-        response.error.message || 'Bulk Addition failed',
-        response.error.statusCode || 400,
-      );
-    }
+    console.log(response)
+
+    // if (response?.error) {
+    //   const exception = new HttpException(
+    //     response.error.message || 'Bulk Addition failed',
+    //     response.error.statusCode || 400,
+    //   );
+    //   console.log(exception)
+    //   throw exception;
+    // }
 
     return res.json(response);
   }

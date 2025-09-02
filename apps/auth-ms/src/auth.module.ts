@@ -9,10 +9,22 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { JwtModule } from '@nestjs/jwt';
 import { RefreshToken } from './entity/refreshToken.entity';
+import { ClientsModule,Transport } from '@nestjs/microservices';
 
 
 @Module({
   imports: [
+    ClientsModule.register([
+      {
+              name: 'NOTIFICATION_SERVICE',
+              transport: Transport.TCP,
+              options: {
+                host: '127.0.0.1',
+                port: 4002, 
+              },
+            },
+    ]),
+
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
