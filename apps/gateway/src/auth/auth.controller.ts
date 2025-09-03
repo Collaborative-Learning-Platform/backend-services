@@ -36,10 +36,6 @@ export class AuthController {
 
     // Microservice can return { error: { statusCode, message } }
     if (response?.error) {
-      // throw new HttpException(
-      //   response.error.message || 'Login failed',
-      //   response.error.statusCode || 400,
-      // );
       const ret = {
         success: false,
         message: response.error.message || 'Login failed',
@@ -71,10 +67,6 @@ export class AuthController {
     );
 
     if (response?.error) {
-      // throw new HttpException(
-      //   response.error.message || 'Login failed',
-      //   response.error.statusCode || 400,
-      // );
       const ret = {
         success: false,
         message: response.error.message || 'Login failed',
