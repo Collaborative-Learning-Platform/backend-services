@@ -2,6 +2,8 @@
 import { NestFactory } from '@nestjs/core';
 import { GatewayModule } from './gateway.module';
 import * as cookieparser from 'cookie-parser';
+import { RpcExceptionFilter } from './filters/rpc-exception.filter';
+
 
 async function bootstrap() {
   const app = await NestFactory.create(GatewayModule);
@@ -15,6 +17,8 @@ async function bootstrap() {
     credentials: true,
     
   });
+
+  app.useGlobalFilters(new RpcExceptionFilter())
 
   await app.listen(3000);
   console.log('API Gateway is running at http://localhost:3000');

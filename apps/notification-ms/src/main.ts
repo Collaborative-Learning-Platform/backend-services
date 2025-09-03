@@ -1,17 +1,17 @@
 import { NestFactory } from '@nestjs/core';
-import { AuthModule } from './auth.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './filters/all-exception.filter';
+import { NotificationMsModule } from './notification-ms.module';
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
-    AuthModule,
+    NotificationMsModule,
     {
       transport: Transport.TCP,
       options: {
         host: '127.0.0.1',
-        port: 4000,
+        port: 4002,
       },
     },
   );
@@ -24,6 +24,6 @@ async function bootstrap() {
   ));
   app.useGlobalFilters(new AllExceptionsFilter());
   await app.listen();
-  console.log('Auth microservice is running');
+  console.log('Notification microservice is running');
 }
 bootstrap();

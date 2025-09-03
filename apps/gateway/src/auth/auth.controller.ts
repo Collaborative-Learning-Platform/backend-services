@@ -1,48 +1,160 @@
-import { Controller, Post, Body, Inject, HttpException, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  Res,
+  HttpException,
+  Body,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Response } from 'express';
+import * as multer from 'multer';
 import { lastValueFrom } from 'rxjs';
+
 
 @Controller('auth')
 export class AuthController {
   constructor(@Inject('AUTH_SERVICE') private readonly authClient: ClientProxy) {}
 
+  
   @Post('login')
-  async login(@Body() data, @Res() res: Response) {
-    try {
-      // Call the auth microservice
-      console.log("methanata awoooooo")
-      const tokens = await lastValueFrom(
-        this.authClient.send({ cmd: 'auth_login' }, data)
-      );
-      console.log(tokens);
+  async login(
+    @Body() data: { email: string; password: string },
+    @Res() res: Response,
+  ) {
+    console.log('Received login request at gateway:', data);
 
-      // Expected from microservice: { accessToken, refreshToken }
-      res.cookie('access_token', tokens.accessToken, {
-        httpOnly: true,
-        secure: false, // true in production
-        sameSite: 'lax',
-        maxAge: 15 * 60 * 1000, // 15 min
-      });
+    // Send request to Auth microservice
+    const response = await lastValueFrom(
+      this.authClient.send({ cmd: 'auth_login' }, data),
+    );
 
-      res.cookie('refresh_token', tokens.refreshToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+    console.log(response)
 
-      // Send response to frontend
-      return res.json({ message: 'Login successful' });
-    } catch (error) {
-      console.log(error);
-      let status = error?.status;
-      // If status is not a number, default to 500
-      if (typeof status !== 'number' || isNaN(status)) {
-        status = 500;
+    // Microservice can return { error: { statusCode, message } }
+    if (response?.error) {
+      // throw new HttpException(
+      //   response.error.message || 'Login failed',
+      //   response.error.statusCode || 400,
+      // );
+      const ret = {
+        success: false,
+        message: response.error.message || 'Login failed',
+        status: response.error.statusCode || 400,
       }
-      const message = error?.response?.message || error?.message || 'Internal server error';
-      throw new HttpException(message, status);
+      return res.json(ret);
     }
+
+
+
+    if (!response.success) {
+      return response;
+    }
+
+    this.setAuthCookies(res, response.access_token, response.refresh_token);
+
+    
+    return res.json({
+       success: true,
+       role:response.role,
+       user_id:response.id
+      });
   }
+
+  @Post('refresh-token')
+  async refreshToken(@Body() data: { refresh_token: string }, @Res() res: Response) {
+    const response = await lastValueFrom(
+      this.authClient.send({ cmd: 'auth_refresh_token' }, data),
+    );
+
+    if (response?.error) {
+      // throw new HttpException(
+      //   response.error.message || 'Login failed',
+      //   response.error.statusCode || 400,
+      // );
+      const ret = {
+        success: false,
+        message: response.error.message || 'Login failed',
+        status: response.error.statusCode || 400,
+      }
+      return res.json(ret);
+    }
+
+    if (!response?.access_token || !response?.refresh_token) {
+       return res.json({
+         success: false,
+         message: 'Invalid refresh response',
+         status: 500,
+       });
+    }
+
+    this.setAuthCookies(res, response.access_token, response.refresh_token);
+
+    return res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+      role: response.role,
+      user_id: response.id,
+    });
+    }
+
+
+
+  private setAuthCookies(res: Response, access_token: string, refresh_token: string) {
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // 15 min
+    });
+
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+  }
+
+
+
+
+
+
+
+
+  @Post('bulk-upload')
+  @UseInterceptors(FileInterceptor('file', { storage: multer.memoryStorage() }))
+  async bulkUpload(@UploadedFile() file: Express.Multer.File, @Res() res: Response) {
+    if (!file) {
+      throw new HttpException('No file provided', 400);
+    }
+    const fileData = {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      buffer: file.buffer,
+    };
+    // console.log('Received file for bulk upload:', fileData.buffer.toString('utf8'));
+    const response = await lastValueFrom(
+      this.authClient.send({ cmd: 'bulk_register_file' }, fileData)
+    );
+
+    console.log(response)
+
+    // if (response?.error) {
+    //   const exception = new HttpException(
+    //     response.error.message || 'Bulk Addition failed',
+    //     response.error.statusCode || 400,
+    //   );
+    //   console.log(exception)
+    //   throw exception;
+    // }
+
+    return res.json(response);
+  }
+
+
 }
