@@ -30,8 +30,7 @@ export class AuthService {
 
     console.log(user)
 
-    if (!user) {
-      
+    if (!user) {    
       return{
         success: false,
         message: 'User not found',
@@ -41,7 +40,6 @@ export class AuthService {
 
     const isMatched = await bcrypt.compare(credentials.password, user.hashed_password);
     if (!isMatched) {
-    
         return {
           success: false,
           message: 'Invalid email or password',
