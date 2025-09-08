@@ -9,14 +9,14 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @MessagePattern({ cmd: 'auth_login' })
-  login(@Payload() data: LoginDto) {
+  async login(@Payload() data: LoginDto) {
     
     return this.authService.validateUser(data);
   }
 
 
   @MessagePattern({ cmd: 'auth_refresh_token' })
-  refresh(@Payload() data: refreshTokenDTO){
+  async refresh(@Payload() data: refreshTokenDTO) {
     return this.authService.refreshToken(data.refresh_token);
   }
 

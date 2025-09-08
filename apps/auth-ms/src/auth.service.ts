@@ -1,8 +1,8 @@
-import { HttpException, HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entity/user.entity';
-import { In, Repository, MoreThan } from 'typeorm';
+import {  Repository, MoreThan } from 'typeorm';
 import * as csv from 'csv-parser';
 import * as XLSX from 'xlsx';
 import { Readable } from 'stream';
@@ -31,7 +31,7 @@ export class AuthService {
     console.log(user)
 
     if (!user) {
-      // throw new BadRequestException("User not found");
+      
       return{
         success: false,
         message: 'User not found',
@@ -41,7 +41,7 @@ export class AuthService {
 
     const isMatched = await bcrypt.compare(credentials.password, user.hashed_password);
     if (!isMatched) {
-    //  throw new UnauthorizedException("Invalid email or password");
+    
         return {
           success: false,
           message: 'Invalid email or password',
@@ -116,7 +116,7 @@ export class AuthService {
   async processFileAndCreateUsers(fileData: { originalname: string; buffer: Buffer }) {
     let users: any[] = [];
 
-    // 1. Parse file
+    // Parse file
     if (fileData.originalname.endsWith('.csv')) {
       users = await this.parseCsv(fileData.buffer);
     } else if (fileData.originalname.endsWith('.xlsx')) {
@@ -127,7 +127,7 @@ export class AuthService {
 
     console.log(users)
 
-    // 2. Prepare users (hash passwords)
+    // Prepare users (hash passwords)
     const preparedUsers = await Promise.all(
       users.map(async (u) => ({
         ...u,
@@ -138,18 +138,18 @@ export class AuthService {
 
     let savedUsers: any[];
 
-    // 3. Save to DB with error handling
+    // Save to DB with error handling
     try {
       savedUsers = await this.userRepository.save(preparedUsers);
-      console.log("✅ Saved Users:", savedUsers);
+      console.log("Saved Users:", savedUsers);
     } catch (error) {
-      console.error("❌ Error saving users:", error);
+      console.error(" Error saving users:", error);
       return {
         success: false,
         message: 'Failed to save users',
         error: error.message,
       };
-      throw new HttpException(`Failed to save users`,HttpStatus.BAD_REQUEST);
+      
     }
 
 
@@ -166,7 +166,7 @@ export class AuthService {
       console.log(err)
     }
 
-    // 5. Always return success if users were created
+    // Always return success if users were created
     return {
       success: true, 
       message: 'Bulk registration successful. Emails have been sent.',

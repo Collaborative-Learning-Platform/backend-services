@@ -1,12 +1,14 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
 
 
+
 @Entity()
 export class Workspace {
     @PrimaryGeneratedColumn("uuid")
     id: string;
 
-    @Column()
+    
+    @Column({ unique: true })
     name: string;
 
     @Column()
