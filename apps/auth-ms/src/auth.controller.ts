@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { LoginDto } from './dto/login.dto';
 import { refreshTokenDTO } from './dto/refreshToken.dto';
+import { PasswordResetDto } from './dto/passwordReset.dto';
 
 @Controller()
 export class AuthController {
@@ -20,7 +21,10 @@ export class AuthController {
     return this.authService.refreshToken(data.refresh_token);
   }
 
-
+  @MessagePattern({ cmd: 'auth_forgot_password' })
+  async forgotPassword(@Payload() data: PasswordResetDto) {
+    return this.authService.forgotPassword(data.email);
+  }
 
 
 

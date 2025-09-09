@@ -63,10 +63,31 @@ export class AuthController {
   }
 
 
-  
+  @Post('forgot-password')
+  async forgotPassword(@Body() data: { email: string }, @Res() res: Response) {
+    
+    const response = await lastValueFrom(
+      this.authClient.send({ cmd: 'auth_forgot_password' }, data),
+    );
 
+    if (response?.error) {
+      const ret = handleValidationError(response.error);
+      return res.json(ret);
+    }
 
+    if (!response?.success) {
+      return res.json({
+        success: false,
+        message: response.message || 'Failed to send password reset email',
+        status: response.status || 400,
+      });
+    }
 
+    return res.json({
+      success: true,
+      message: 'Password reset email sent successfully',
+    });
+  }
 
 
 
