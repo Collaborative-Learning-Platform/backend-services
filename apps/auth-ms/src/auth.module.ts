@@ -6,8 +6,6 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entity/user.entity'; 
-// import * as fs from 'fs';
-// import * as path from 'path';
 import { JwtModule } from '@nestjs/jwt';
 import { RefreshToken } from './entity/refreshToken.entity';
 import { ClientsModule,Transport } from '@nestjs/microservices';
@@ -36,7 +34,6 @@ import { ClientsModule,Transport } from '@nestjs/microservices';
       entities: [User, RefreshToken],
       synchronize: true,
       ssl: {
-        // ca: fs.readFileSync(path.resolve(process.cwd(), 'env', 'aiven-ca.crt')).toString(),
         rejectUnauthorized: false,
       },
     }),

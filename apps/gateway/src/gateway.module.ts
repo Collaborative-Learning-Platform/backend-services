@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
-
+import { WorkspaceController } from './workspace/workspace.controller';
 
 @Module({
   imports: [
@@ -24,8 +24,16 @@ import { UsersController } from './users/users.controller';
         port: 4001, 
       },
     },
+    {
+      name: 'WORKSPACE_SERVICE',
+      transport: Transport.TCP,
+      options: {
+        host: '127.0.0.1',
+        port: 4003,
+      },
+    }
     ]),
   ],
-  controllers: [AuthController, UsersController],
+  controllers: [AuthController, UsersController, WorkspaceController],
 })
 export class GatewayModule {}

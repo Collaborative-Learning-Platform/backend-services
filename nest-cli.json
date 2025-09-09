@@ -52,6 +52,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/user-ms/tsconfig.app.json"
       }
+    },
+    "workspace-ms": {
+      "type": "application",
+      "root": "apps/workspace-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/workspace-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/workspace-ms/tsconfig.app.json"
+      }
     }
   }
 }
