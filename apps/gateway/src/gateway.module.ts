@@ -6,6 +6,7 @@ import { UsersController } from './users/users.controller';
 import { JwtModule } from '@nestjs/jwt';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: process.cwd() + '/env/.gateway.env' });
+import { WorkspaceController } from './workspace/workspace.controller';
 
 @Module({
   imports: [
@@ -26,12 +27,20 @@ dotenv.config({ path: process.cwd() + '/env/.gateway.env' });
         port: 4001, 
       },
     },
+    {
+      name: 'WORKSPACE_SERVICE',
+      transport: Transport.TCP,
+      options: {
+        host: '127.0.0.1',
+        port: 4003,
+      },
+    }
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET, 
       signOptions: { expiresIn: '1h' }, 
     }),
   ],
-  controllers: [AuthController, UsersController],
+  controllers: [AuthController, UsersController, WorkspaceController],
 })
 export class GatewayModule {}

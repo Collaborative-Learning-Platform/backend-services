@@ -28,6 +28,22 @@
         "tsConfigPath": "apps/gateway/tsconfig.app.json"
       }
     },
+    "notification-ms": {
+      "type": "application",
+      "root": "apps/notification-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/notification-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/notification-ms/tsconfig.app.json",
+        "assets": [
+          {
+            "include": "src/templates/**/*",
+            "outDir": "dist/apps/notification-ms/templates"
+          }
+        ],
+        "watchAssets": true
+      }
+    },
     "user-ms": {
       "type": "application",
       "root": "apps/user-ms",
@@ -35,6 +51,15 @@
       "sourceRoot": "apps/user-ms/src",
       "compilerOptions": {
         "tsConfigPath": "apps/user-ms/tsconfig.app.json"
+      }
+    },
+    "workspace-ms": {
+      "type": "application",
+      "root": "apps/workspace-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/workspace-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/workspace-ms/tsconfig.app.json"
       }
     }
   }

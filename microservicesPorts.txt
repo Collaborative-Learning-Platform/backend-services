@@ -1,0 +1,5 @@
+Gateway : 3000
+auth : 4000
+user:4001
+notification : 4002
+workspace:4003
