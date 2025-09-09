@@ -33,7 +33,7 @@ export class AuthService {
     if (!user) {    
       return{
         success: false,
-        message: 'User not found',
+        message: `User with email ${credentials.email} not found`,
         status: 400,
       }
     }
@@ -42,7 +42,7 @@ export class AuthService {
     if (!isMatched) {
         return {
           success: false,
-          message: 'Invalid email or password',
+          message: 'Invalid email or password. Please check your credentials and try again.',
           status: 401,
         }
     }
@@ -54,7 +54,8 @@ export class AuthService {
       success:true,
       ...tokens,
       role:user.role,
-      id:user.id
+      id:user.id,
+      name:user.name,
     }
   }
 

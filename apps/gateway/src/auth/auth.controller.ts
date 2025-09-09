@@ -63,6 +63,13 @@ export class AuthController {
   }
 
 
+  
+
+
+
+
+
+
   @Post('refresh-token')
   async refreshToken(@Body() data: { refresh_token: string }, @Res() res: Response) {
     const response = await lastValueFrom(
@@ -112,12 +119,6 @@ export class AuthController {
   }
 
 
-
-
-
-
-
-
   @Post('bulk-upload')
   @UseInterceptors(FileInterceptor('file', { storage: multer.memoryStorage() }))
   async bulkUpload(@UploadedFile() file: Express.Multer.File, @Res() res: Response) {
@@ -144,7 +145,6 @@ export class AuthController {
 
     return res.json(response);
   }
-
 
 }
 
