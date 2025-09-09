@@ -26,7 +26,11 @@ export class AuthController {
     return this.authService.forgotPassword(data.email);
   }
 
-
+  @MessagePattern({ cmd: 'auth_get_user' })
+  async getUser(@Payload() data: { userId: string }) {
+    
+    return this.authService.getUser(data.userId);
+  }
 
 
   @MessagePattern({ cmd: 'bulk_register_file' })
