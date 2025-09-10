@@ -12,6 +12,7 @@ import { RefreshToken } from './entity/refreshToken.entity';
 import { v4 as uuidv4 } from 'uuid';
 import { ClientProxy } from '@nestjs/microservices';
 import {welcomeTemplate} from './templates/welcomeMail'
+import { resetPasswordTemplate } from './templates/resetPasswordMail';
 
 @Injectable()
 export class AuthService {
@@ -55,10 +56,61 @@ export class AuthService {
       ...tokens,
       role:user.role,
       id:user.id,
-      name:user.name,
+      // name:user.name,
+      // email:user.email,
     }
   }
 
+  async getUser(userId: string) {
+    
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      return{
+        success: false,
+        message: `User with ID ${userId} not found`,
+        status: 400,
+      }
+    }
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      }
+    };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.userRepository.findOne({ where: { email: email } });
+    if (!user) {    
+      return{
+        success: false,
+        message: `User with email ${email} not found`,
+        status: 400,
+      }
+    }
+
+    // Send password reset email
+    // ...
+    const { subject,html} = resetPasswordTemplate(user.name, user.email, 'http://example.com/reset?token=some-token');
+
+    try{
+      this.notificationClient.emit('notify', { email: user.email, subject, html });
+    }catch(err){
+      return{
+        success: false,
+        message: 'Failed to send password reset email',
+      } 
+    }
+
+    return{
+      success: true,
+      message: 'Password reset email sent successfully',
+    };
+  }
 
 
 
