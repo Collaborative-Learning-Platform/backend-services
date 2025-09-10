@@ -33,6 +33,13 @@ export class AuthController {
   }
 
 
+  @MessagePattern({ cmd:'auth_get_users' })
+  async getUsers() {
+    return this.authService.getUsers();
+  }
+
+
+
   @MessagePattern({ cmd: 'bulk_register_file' })
   async bulkRegisterFile(fileData: { originalname: string; buffer: any }) {
 

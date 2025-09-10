@@ -170,6 +170,7 @@ export class AuthController {
   }
 
 
+  
 
   @Get('get-user/:userId')
   async getUser(@Param('userId') userId: string, @Res() res: Response) {
@@ -197,6 +198,31 @@ export class AuthController {
     });
   }
 
-}
+
+  @Get('users')
+  async getUsers(@Res() res: Response) {
+    const response = await lastValueFrom(
+      this.authClient.send({ cmd: 'auth_get_users' }, {}),
+    );
+
+    if (response?.error) {
+      const ret = handleValidationError(response.error);
+      return res.json(ret);
+    }
+
+    if (!response?.success) {
+      return res.json({
+        success: false,
+        message: response.message || 'Failed to retrieve users',
+        status: response.status || 400,
+      });
+    }
+
+    return res.json({
+      success: true,
+      users: response.users,
+    });
+  }
   
+}
 

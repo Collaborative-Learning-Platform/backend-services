@@ -14,6 +14,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import {welcomeTemplate} from './templates/welcomeMail'
 import { resetPasswordTemplate } from './templates/resetPasswordMail';
 
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -82,6 +83,44 @@ export class AuthService {
       }
     };
   }
+
+  async getUsers() {
+    try{
+        const users = await this.userRepository.find();
+        const formattedUsers = users.map(user => {
+        const date = new Date(user.created_at);
+        const formattedDate = date.toLocaleDateString("en-GB"); 
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          joinDate: formattedDate,
+        };
+      });
+
+      return {
+        success: true,
+        users: formattedUsers,
+      };
+    }catch(err){
+      return{
+        success: false,
+        message: 'Failed to retrieve users',
+        error: err.message,
+      }
+    }
+  }
+
+
+
+
+
+
+
+
+
 
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email: email } });
