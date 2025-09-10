@@ -1,7 +1,7 @@
 // login.dto.ts
 import {  IsEmail } from 'class-validator';
 
-export class PasswordResetDto {
+export class ForgotPasswordDto {
   @IsEmail()
   email: string;
 

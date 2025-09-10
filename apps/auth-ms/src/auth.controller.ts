@@ -3,7 +3,8 @@ import { AuthService } from './auth.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { LoginDto } from './dto/login.dto';
 import { refreshTokenDTO } from './dto/refreshToken.dto';
-import { PasswordResetDto } from './dto/passwordReset.dto';
+import { ForgotPasswordDto } from './dto/ForgotPassword.dto';
+import { FirstTimeLoginPasswordChangeDTO } from './dto/FirstTimeLoginPasswordChange.dto';
 
 @Controller()
 export class AuthController {
@@ -15,6 +16,11 @@ export class AuthController {
     return this.authService.validateUser(data);
   }
 
+  @MessagePattern({ cmd: 'auth_first_time_login' })
+  async firstTimeLogin(@Payload() data: FirstTimeLoginPasswordChangeDTO) {
+    return this.authService.firstTimeLogin(data.user_id, data.new_password);
+  }
+
 
   @MessagePattern({ cmd: 'auth_refresh_token' })
   async refresh(@Payload() data: refreshTokenDTO) {
@@ -22,9 +28,10 @@ export class AuthController {
   }
 
   @MessagePattern({ cmd: 'auth_forgot_password' })
-  async forgotPassword(@Payload() data: PasswordResetDto) {
+  async forgotPassword(@Payload() data: ForgotPasswordDto) {
     return this.authService.forgotPassword(data.email);
   }
+
 
   @MessagePattern({ cmd: 'auth_get_user' })
   async getUser(@Payload() data: { userId: string }) {
@@ -54,9 +61,7 @@ export class AuthController {
       throw new Error('Invalid file buffer received');
     }
 
-    // console.log('File buffer size (bytes):', buffer.length);
-
-    
+    // console.log('File buffer size (bytes):', buffer.length);    
     return this.authService.processFileAndCreateUsers({
       originalname: fileData.originalname,
       buffer,

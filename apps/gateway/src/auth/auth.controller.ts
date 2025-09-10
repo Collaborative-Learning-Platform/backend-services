@@ -60,8 +60,34 @@ export class AuthController {
     return res.json({
        success: true,
        role:response.role,
-       user_id:response.id
+       user_id:response.id,
+      firstTimeLogin: response.firstTimeLogin,
       });
+  }
+
+  //first time login to change password
+  @Post('first-time-login')
+  async firstTimeLogin(@Body() data: { user_id: string; new_password: string }, @Res() res: Response) {
+    const response = await lastValueFrom(
+      this.authClient.send({ cmd: 'auth_first_time_login' }, data),
+    );
+
+    if (response?.error) {
+      const ret = handleValidationError(response.error);
+      return res.json(ret);
+    }
+
+    if (!response?.success) {
+      return res.json({
+        success: false,
+        message: response.message || 'Password change failed',
+        status: response.status || 400,
+      });
+    }
+
+    return res.json({
+      success: true,
+    });
   }
 
 
@@ -223,6 +249,6 @@ export class AuthController {
       users: response.users,
     });
   }
-  
+
 }
 
