@@ -1,19 +1,14 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put } from '@nestjs/common';
 import { UserService } from './user.service';
-import { MessagePattern } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Controller()
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get()
-  getHello(): string {
-    return this.userService.getHello();
+  @MessagePattern({ cmd: 'update_user' })
+  async updateUserName(@Payload() data: { updateUserDto: UpdateUserDto }) {
+    return this.userService.updateUserName(data.updateUserDto);
   }
-
-  @MessagePattern({ cmd: 'get_profile' })
-  getProfile() {
-    // In a real app, you should create and use a DTO here instead of `any`
-    return this.userService.getProfile();
-  }  
 }
