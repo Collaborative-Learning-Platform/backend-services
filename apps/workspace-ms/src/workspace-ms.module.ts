@@ -7,6 +7,8 @@ import { ClientsModule } from '@nestjs/microservices';
 import { Transport } from '@nestjs/microservices';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import {Workspace} from './entity/workspace.entity';
+import { UserWorkspace } from './entity/user-workspace.entity';
+import { Group } from './entity/group.entity';
 
 @Module({
   imports: [
@@ -27,14 +29,16 @@ import {Workspace} from './entity/workspace.entity';
           username: process.env.DB_USERNAME,
           password: process.env.DB_PASSWORD,
           database: process.env.DB_NAME,
-          entities: [Workspace],
+          entities: [Workspace, UserWorkspace, Group],
           synchronize: true,
           ssl: {
             rejectUnauthorized: false,
           },
         }),
     TypeOrmModule.forFeature([
-      Workspace
+      Workspace,
+      UserWorkspace,
+      Group
     ]),
   ],
   
