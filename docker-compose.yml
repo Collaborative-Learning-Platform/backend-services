@@ -8,6 +8,7 @@ services:
     ports:
       - '3000:3000'
     env_file:
+      - ./env/.common.env
       - ./env/.gateway.env
     depends_on:
       - user-ms
@@ -27,6 +28,90 @@ services:
       context: .
       dockerfile: docker/auth-ms.Dockerfile
     env_file:
+      - ./env/.common.env
       - ./env/.auth-ms.env
     expose:
       - '4000'
+
+  notification-ms:
+    build:
+      context: .
+      dockerfile: docker/notification-ms.Dockerfile
+    env_file:
+      - ./env/.notification-ms.env
+    expose:
+      - '4002'
+
+
+  workspace-ms:
+    build:
+      context: .
+      dockerfile: docker/workspace-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+    expose:
+      - '4003'
+
+# version: '3.8'
+
+# services:
+#   gateway:
+#     build:
+#       context: .
+#       dockerfile: docker/Dockerfile
+#       args:
+#         - SERVICE=gateway
+#     ports:
+#       - '3000:3000'
+#     env_file:
+#       - ./env/.common.env
+#       - ./env/.gateway.env
+#     depends_on:
+#       - user-ms
+#       - auth-ms
+
+#   user-ms:
+#     build:
+#       context: .
+#       dockerfile: docker/Dockerfile
+#       args:
+#         - SERVICE=user-ms
+#     env_file:
+#       - ./env/.user-ms.env
+#     expose:
+#       - '4001'
+
+#   auth-ms:
+#     build:
+#       context: .
+#       dockerfile: docker/Dockerfile
+#       args:
+#         - SERVICE=auth-ms
+#     env_file:
+#       - ./env/.common.env
+#       - ./env/.auth-ms.env
+#     expose:
+#       - '4000'
+
+#   notification-ms:
+#     build:
+#       context: .
+#       dockerfile: docker/Dockerfile
+#       args:
+#         - SERVICE=notification-ms
+#     env_file:
+#       - ./env/.notification-ms.env
+#     expose:
+#       - '4002'
+
+
+#   workspace-ms:
+#     build:
+#       context: .
+#       dockerfile: docker/Dockerfile
+#       args:
+#         - SERVICE=workspace-ms
+#     env_file:
+#       - ./env/.common.env
+#     expose:
+#       - '4003'
