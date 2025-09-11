@@ -14,6 +14,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import {welcomeTemplate} from './templates/welcomeMail'
 import { resetPasswordTemplate } from './templates/resetPasswordMail';
 
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -56,10 +57,43 @@ export class AuthService {
       ...tokens,
       role:user.role,
       id:user.id,
-      // name:user.name,
-      // email:user.email,
+      firstTimeLogin: user.first_time_user
     }
   }
+
+
+  async firstTimeLogin(userId: string, newPassword: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      return{
+        success: false,
+        message: `User with ID ${userId} not found`,
+        status: 400,
+      }
+    }
+
+    const hashed_password = await bcrypt.hash(newPassword, 10);
+
+    user.hashed_password = hashed_password;
+    user.first_time_user = false;
+
+    await this.userRepository.save(user);
+
+    return {
+      success: true,
+      message: 'Password changed successfully',
+    };
+  }
+
+
+
+
+
+
+
+
+
 
   async getUser(userId: string) {
     
@@ -82,6 +116,44 @@ export class AuthService {
       }
     };
   }
+
+  async getUsers() {
+    try{
+        const users = await this.userRepository.find();
+        const formattedUsers = users.map(user => {
+        const date = new Date(user.created_at);
+        const formattedDate = date.toLocaleDateString("en-GB"); 
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          joinDate: formattedDate,
+        };
+      });
+
+      return {
+        success: true,
+        users: formattedUsers,
+      };
+    }catch(err){
+      return{
+        success: false,
+        message: 'Failed to retrieve users',
+        error: err.message,
+      }
+    }
+  }
+
+
+
+
+
+
+
+
+
 
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email: email } });
