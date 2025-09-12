@@ -32,6 +32,12 @@ export class WorkspaceMsController {
     return this.workspaceMsService.getWorkspaces(data);
   }
 
+  @MessagePattern({cmd:'get_all_workspaces'})
+  async getAllWorkspaces() {
+    console.log('Received get all workspaces request at microservice:');
+    return this.workspaceMsService.getAllWorkspaces();
+  }
+
   @MessagePattern({cmd:'create_group'})
   async createGroup(@Payload() data: createGroupDto) {
     console.log('Received create group request at microservice:', data);
@@ -42,6 +48,12 @@ export class WorkspaceMsController {
   async getGroups(@Payload() data: {workspaceId: string}) {
     console.log('Received get groups request at microservice:', data);
     return this.workspaceMsService.getGroups(data);
+  }
+
+  @MessagePattern({cmd:'add_user_to_group'})
+  async addUserToGroup(@Payload() data: {userId: string, groupId: string}) {
+    console.log('Received add user to group request at microservice:', data);
+    return this.workspaceMsService.addUserToGroup(data);
   }
 
 }

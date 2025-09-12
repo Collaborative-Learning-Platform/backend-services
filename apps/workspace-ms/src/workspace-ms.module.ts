@@ -9,6 +9,7 @@ import {TypeOrmModule} from '@nestjs/typeorm';
 import {Workspace} from './entity/workspace.entity';
 import { UserWorkspace } from './entity/user-workspace.entity';
 import { Group } from './entity/group.entity';
+import { UserGroup } from './entity/user-group.entity';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { Group } from './entity/group.entity';
           username: process.env.DB_USERNAME,
           password: process.env.DB_PASSWORD,
           database: process.env.DB_NAME,
-          entities: [Workspace, UserWorkspace, Group],
+          entities: [Workspace, UserWorkspace, Group, UserGroup],
           synchronize: true,
           ssl: {
             rejectUnauthorized: false,
@@ -38,7 +39,8 @@ import { Group } from './entity/group.entity';
     TypeOrmModule.forFeature([
       Workspace,
       UserWorkspace,
-      Group
+      Group,
+      UserGroup
     ]),
   ],
   

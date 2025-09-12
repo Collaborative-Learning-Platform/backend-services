@@ -4,8 +4,14 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Column,
 } from "typeorm";
 import { Workspace } from "./workspace.entity";
+
+enum UserRole {
+  ADMIN = "tutor",
+  USER = "user",
+} 
 
 @Entity()
 export class UserWorkspace {
@@ -17,6 +23,9 @@ export class UserWorkspace {
 
   @CreateDateColumn()
   joinedAt: Date;
+
+  @Column({type: "enum", enum: UserRole, default: UserRole.USER })
+  role: UserRole;
 
 // relationships
   @ManyToOne(() => Workspace, { onDelete: "CASCADE" })

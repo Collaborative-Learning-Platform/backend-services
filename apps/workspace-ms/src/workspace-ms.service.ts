@@ -6,12 +6,15 @@ import { UserWorkspace } from './entity/user-workspace.entity';
 import { addUserDto } from './dto/addUser.dto';
 import { createGroupDto } from './dto/createGroup.dto';
 import { Group } from './entity/group.entity';
+import { UserGroup } from './entity/user-group.entity';
 
 @Injectable()
 export class WorkspaceMsService {
  constructor(@InjectRepository(Workspace) private readonly workspaceRepository: Repository<Workspace>
   , @InjectRepository(UserWorkspace) private readonly userWorkspaceRepository: Repository<UserWorkspace>
-  , @InjectRepository(Group) private readonly groupRepository: Repository<Group>) {}
+  , @InjectRepository(Group) private readonly groupRepository: Repository<Group>
+  , @InjectRepository(UserGroup) private readonly userGroupRepository: Repository<UserGroup>
+) {}
 
   getHello(): string {
     return 'Hello World!';
@@ -114,6 +117,63 @@ export class WorkspaceMsService {
     }
   }
 
+  // async getAllWorkspaces() {
+  //   try {
+  //       const workspaces = await this.workspaceRepository.find({
+  //         relations: ["workspace"],
+  //       });
+  //       return {
+  //         success: true,
+  //         message: 'All workspaces retrieved successfully',
+  //         data: workspaces,
+  //       };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: `Failed to retrieve workspaces: ${error.message}`,
+  //       status: 500,
+  //     };
+  //   }
+  // }
+
+  async getAllWorkspaces() {
+  try {
+    // Load workspaces with related user-workspaces
+    const workspaces = await this.workspaceRepository.find({
+      relations: ["userWorkspaces"], // add relation in entity
+    });
+
+    const result = workspaces.map((w) => {
+      const tutorCount = w.userWorkspaces.filter(uw => uw.role === "tutor").length;
+      const studentCount = w.userWorkspaces.filter(uw => uw.role === "user").length;
+
+      return {
+        workspaceId: w.workspaceId,
+        name: w.name,
+        description: w.description,
+        createdAt: w.createdAt,
+        createdBy: w.createdBy,
+        tutorCount,
+        studentCount,
+      };
+    });
+
+    return {
+      success: true,
+      message: "All workspaces retrieved successfully",
+      data: result,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to retrieve workspaces: ${error.message}`,
+      status: 500,
+    };
+  }
+  }
+
+
+
 
   async createGroup(data: createGroupDto) {
     const existingGroup = await this.groupRepository.findOne({ where: { name: data.name, workspaceId: data.workspaceId } });
@@ -167,4 +227,38 @@ export class WorkspaceMsService {
       };
     }
   }
-}  
+
+
+  async addUserToGroup(data: {userId: string, groupId: string}) {
+    try{
+      const group = await this.userGroupRepository.findOne({ where: { groupId: data.groupId } });
+      if(!group) {
+        return {
+          success: false,
+          message: 'Group not found',
+          status: 404,
+        };
+      }
+      const existingMembership = await this.userGroupRepository.findOne({ where: { userId: data.userId, groupId: data.groupId } });
+      if(existingMembership) {
+        return {
+          success: false,
+          message: 'User is already a member of the group',
+          status: 400,
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to add user to group: ${error.message}`,
+        status: 500,
+      };
+    }
+    const result = await this.userGroupRepository.save({ userId: data.userId, groupId: data.groupId });
+    return {
+      success: true,
+      message: 'User added to group successfully',
+      data: result,
+    };
+  }
+}

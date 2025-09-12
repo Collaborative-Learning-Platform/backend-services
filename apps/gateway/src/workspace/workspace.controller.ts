@@ -1,4 +1,4 @@
-import { Body, Controller, Inject, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Res } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { Response } from 'express';
@@ -53,7 +53,7 @@ export class WorkspaceController {
         
     }
 
-    @Post('getWorkspaces')
+    @Post('getWorkspacesByUser')
     async getWorkspaces(@Body() data: any, @Res() res: Response) {
         console.log('Received get workspaces request at gateway:', data);
         const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'get_workspaces' }, data));
@@ -75,6 +75,28 @@ export class WorkspaceController {
         return res.json({
             success: true,
             message: 'Workspaces fetched successfully',
+            data: response.data,
+        })
+    }
+
+    @Get('getAllWorkspaces')
+    async getAllWorkspaces( @Res() res: Response) {
+        const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'get_all_workspaces' }, {}));
+
+        if (response?.error) {
+            const ret = handleValidationError(response.error);
+            return res.json(ret);
+        }
+        if (! response?.success) {
+            return res.json({
+                success: false,
+                message: response.message || 'Failed to get all workspaces',
+                status: response.status || 400,
+            });
+        }
+        return res.json({
+            success: true,
+            message: 'All workspaces fetched successfully',
             data: response.data,
         })
     }
