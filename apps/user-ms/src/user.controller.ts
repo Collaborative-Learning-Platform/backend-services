@@ -11,4 +11,6 @@ export class UserController {
   async updateUserName(@Payload() data: { updateUserDto: UpdateUserDto }) {
     return this.userService.updateUserName(data.updateUserDto);
   }
+
+  
 }

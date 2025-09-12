@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Res ,Param} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { Response } from 'express';
@@ -53,10 +53,10 @@ export class WorkspaceController {
         
     }
 
-    @Post('getWorkspacesByUser')
-    async getWorkspaces(@Body() data: any, @Res() res: Response) {
-        console.log('Received get workspaces request at gateway:', data);
-        const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'get_workspaces' }, data));
+    @Get('getWorkspacesByUser/:user_id')
+    async getWorkspaces(@Param('user_id') userId: string, @Res() res: Response) {
+        console.log('Received get workspaces request at gateway:', userId);
+        const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'get_workspaces_by_user' }, { userId }));
 
         if (response?.error) {
             console.log('Validation error:', response.error);

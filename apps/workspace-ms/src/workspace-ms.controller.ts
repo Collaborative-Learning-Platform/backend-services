@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { WorkspaceMsService } from './workspace-ms.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import   {workspaceCreationDto}  from './dto/workspaceCreation.dto';
-import { addUserDto } from './dto/addUser.dto';
+import { addUserToWorkspaceDto } from './dto/addUserToWorkspace.dto';
 import { createGroupDto } from './dto/createGroup.dto';
 
 @Controller()
@@ -21,15 +21,15 @@ export class WorkspaceMsController {
   }
 
   @MessagePattern({cmd:'add_user_to_workspace'})
-  async addUserToWorkspace(@Payload() data: addUserDto) {
+  async addUserToWorkspace(@Payload() data: addUserToWorkspaceDto) {
     // console.log('Received add user to workspace request at microservice:', data);
     return this.workspaceMsService.addUserToWorkspace(data);
   }
 
-  @MessagePattern({cmd:'get_workspaces'})
+  @MessagePattern({cmd:'get_workspaces_by_user'})
   async getWorkspaces(@Payload() data: {userId: string}) {
     console.log('Received get workspaces request at microservice:', data);
-    return this.workspaceMsService.getWorkspaces(data);
+    return this.workspaceMsService.getUsersWorkspaces(data);
   }
 
   @MessagePattern({cmd:'get_all_workspaces'})
@@ -56,4 +56,9 @@ export class WorkspaceMsController {
     return this.workspaceMsService.addUserToGroup(data);
   }
 
+  @MessagePattern({cmd:'get_user_stats'})
+  async getUserStats(@Payload() data: {userId: string}) {
+    console.log('Received get user stats request at microservice:', data);
+    return this.workspaceMsService.getUserStats(data);
+  }
 }

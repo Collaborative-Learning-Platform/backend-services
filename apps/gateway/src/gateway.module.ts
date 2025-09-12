@@ -7,6 +7,7 @@ import { JwtModule } from '@nestjs/jwt';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: process.cwd() + '/env/.gateway.env' });
 import { WorkspaceController } from './workspace/workspace.controller';
+import { DashboardController } from './dashboard/dashboard.controller';
 
 @Module({
   imports: [
@@ -41,6 +42,6 @@ import { WorkspaceController } from './workspace/workspace.controller';
       signOptions: { expiresIn: '1h' }, 
     }),
   ],
-  controllers: [AuthController, UsersController, WorkspaceController],
+  controllers: [AuthController, UsersController, WorkspaceController, DashboardController],
 })
 export class GatewayModule {}
