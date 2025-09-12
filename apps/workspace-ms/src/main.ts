@@ -15,14 +15,15 @@ async function bootstrap() {
         port: 4003,
       },
     },
-  )
-  app.useGlobalPipes(new ValidationPipe(
-      {
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      },
-    ));
+  );
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
   app.useGlobalFilters(new AllExceptionsFilter());
   await app.listen();
   console.log('Workspace microservice is listening');
