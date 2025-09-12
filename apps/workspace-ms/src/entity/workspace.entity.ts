@@ -1,11 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
-
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToMany } from "typeorm";
+import { UserWorkspace } from "./user-workspace.entity";
 
 
 @Entity()
 export class Workspace {
     @PrimaryGeneratedColumn("uuid")
-    id: string;
+    workspaceId: string;
     
     @Column({ unique: true })
     name: string;
@@ -19,5 +19,7 @@ export class Workspace {
     @Column({type:'uuid'})
     createdBy: string;
 
+    @OneToMany(() => UserWorkspace, userWorkspace => userWorkspace.workspace)
+    userWorkspaces: UserWorkspace[];
     
 }
