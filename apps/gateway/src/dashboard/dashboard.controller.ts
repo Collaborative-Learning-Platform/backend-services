@@ -10,6 +10,24 @@ export class DashboardController {
     constructor(@Inject("WORKSPACE_SERVICE") private readonly WorkspaceClient: ClientProxy) {}
 
 
+    //getting workspace count and group count for a user
+    //need to improve API design here to send 
+
+    // -> required data in frontend
+    //   const [dashboardData, setDashboardData] = useState<{
+    //     workspaces: number;
+    //     groups: number;
+    //     quizzes: any[];
+    //     studyStreak: number;
+    //     recentActivity: any[];
+    //   }>({
+    //     workspaces: 0,
+    //     groups: 0,
+    //     quizzes: [],
+    //     studyStreak: 0,
+    //     recentActivity: [],
+    //   });
+
     @Get('userStats/:user_id')
     async getUserStats(@Param('user_id') userId: string, @Res() res: Response) {
         const response = await lastValueFrom(
