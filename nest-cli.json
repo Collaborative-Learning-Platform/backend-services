@@ -44,6 +44,15 @@
         "watchAssets": true
       }
     },
+    "quiz-ms": {
+      "type": "application",
+      "root": "apps/quiz-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/quiz-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/quiz-ms/tsconfig.app.json"
+      }
+    },
     "user-ms": {
       "type": "application",
       "root": "apps/user-ms",
