@@ -152,4 +152,29 @@ export class WorkspaceController {
             data: response.data,
         });
     }
-  }
+
+    @Post('addUserToGroup')
+    async addUserToGroup(@Body() data: any, @Res() res: Response) {
+        console.log('Received add user to group request at gateway:', data);
+        const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'add_user_to_group' }, data));
+
+        if (response?.error) {
+            const ret = handleValidationError(response.error);
+            return res.json(ret);
+        }
+
+        if (!response?.success) {
+            return res.json({
+                success: false,
+                message: response.message || 'Failed to add user to group',
+                status: response.status || 400,
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: 'User added to group successfully',
+            data: response.data,
+        });
+    }
+}
