@@ -286,6 +286,8 @@ export class WorkspaceMsService {
       message: 'User added to group successfully',
       data: result,
     };
+
+    
   }
 
 
@@ -314,6 +316,30 @@ export class WorkspaceMsService {
       return {
         success: false,
         message: `Failed to retrieve user statistics: ${error.message}`,
+        status: 500,
+      };
+    }
+  }
+
+
+  async getUserGroupsInWorkspace(data: {userId: string, workspaceId: string}) {
+    try {
+      const groups = await this.groupRepository
+        .createQueryBuilder('group')
+        .innerJoin('user_group', 'ug', 'group.groupId = ug.groupId')
+        .where('ug.userId = :userId', { userId: data.userId })
+        .andWhere('group.workspaceId = :workspaceId', { workspaceId: data.workspaceId })
+        .select(['group.groupId', 'group.name', 'group.description', 'group.type', 'group.createdAt', 'group.createdBy'])
+        .getMany();
+      return {
+        success: true,
+        message: 'User groups in workspace retrieved successfully',
+        data: groups,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to retrieve user groups in workspace: ${error.message}`,
         status: 500,
       };
     }

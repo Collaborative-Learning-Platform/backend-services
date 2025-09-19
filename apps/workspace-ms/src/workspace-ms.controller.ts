@@ -69,4 +69,11 @@ export class WorkspaceMsController {
     console.log('Received get user stats request at microservice:', data);
     return this.workspaceMsService.getUserStats(data);
   }
+
+  //get user joined groups inside a workspace
+  @MessagePattern({cmd:'get_user_groups_in_workspace'})
+  async getUserGroupsInWorkspace(@Payload() data: {userId: string, workspaceId: string}) {
+    console.log('Received get user groups in workspace request at microservice:', data);
+    return this.workspaceMsService.getUserGroupsInWorkspace(data);
+  }
 }

@@ -8,6 +8,8 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: process.cwd() + '/env/.gateway.env' });
 import { WorkspaceController } from './workspace/workspace.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
+import { ChatController } from './chat/chat.controller';
+import { ChatGateway } from './chat/chat.gateway';
 
 @Module({
   imports: [
@@ -36,12 +38,20 @@ import { DashboardController } from './dashboard/dashboard.controller';
         port: 4003,
       },
     }
-    ]),
+    ,{
+      name: 'CHAT_SERVICE',
+      transport: Transport.TCP,
+      options: {
+        host: '127.0.0.1',
+        port: 4004,
+      },
+    }]),
     JwtModule.register({
       secret: process.env.JWT_SECRET, 
       signOptions: { expiresIn: '1h' }, 
     }),
   ],
-  controllers: [AuthController, UsersController, WorkspaceController, DashboardController],
+  controllers: [AuthController, UsersController, WorkspaceController, DashboardController, ChatController],
+  providers: [ChatGateway],
 })
 export class GatewayModule {}
