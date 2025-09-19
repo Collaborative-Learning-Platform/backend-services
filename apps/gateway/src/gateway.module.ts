@@ -10,6 +10,7 @@ import { WorkspaceController } from './workspace/workspace.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
 import { ChatController } from './chat/chat.controller';
 import { ChatGateway } from './chat/chat.gateway';
+import { QuizController } from './quiz/quiz.controller';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { ChatGateway } from './chat/chat.gateway';
         transport: Transport.TCP,
         options: {
           host: '127.0.0.1',
-          port: 4000, 
+          port: 4000,
         },
       },
     {
@@ -37,21 +38,36 @@ import { ChatGateway } from './chat/chat.gateway';
         host: '127.0.0.1',
         port: 4003,
       },
-    }
-    ,{
-      name: 'CHAT_SERVICE',
+    },
+    {
+      name: 'QUIZ_SERVICE',
       transport: Transport.TCP,
       options: {
         host: '127.0.0.1',
         port: 4004,
+        },
       },
-    }]),
+      {
+        name: 'CHAT_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4005,
+        },
+      },
+    ]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET, 
-      signOptions: { expiresIn: '1h' }, 
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '1h' },
     }),
   ],
-  controllers: [AuthController, UsersController, WorkspaceController, DashboardController, ChatController],
+  controllers: [
+    AuthController,
+    UsersController,
+    WorkspaceController,
+    DashboardController,
+    QuizController
+  , ChatController],
   providers: [ChatGateway],
 })
 export class GatewayModule {}
