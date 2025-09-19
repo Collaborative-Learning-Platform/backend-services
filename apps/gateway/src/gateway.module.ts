@@ -8,6 +8,7 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: process.cwd() + '/env/.gateway.env' });
 import { WorkspaceController } from './workspace/workspace.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
+import { QuizController } from './quiz/quiz.controller';
 
 @Module({
   imports: [
@@ -17,31 +18,45 @@ import { DashboardController } from './dashboard/dashboard.controller';
         transport: Transport.TCP,
         options: {
           host: '127.0.0.1',
-          port: 4000, 
+          port: 4000,
         },
       },
-    {
-      name: 'USER_SERVICE',
-      transport: Transport.TCP,
-      options: {
-        host: '127.0.0.1',
-        port: 4001, 
+      {
+        name: 'USER_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4001,
+        },
       },
-    },
-    {
-      name: 'WORKSPACE_SERVICE',
-      transport: Transport.TCP,
-      options: {
-        host: '127.0.0.1',
-        port: 4003,
+      {
+        name: 'WORKSPACE_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4003,
+        },
       },
-    }
+      {
+        name: 'QUIZ_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4004,
+        },
+      },
     ]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET, 
-      signOptions: { expiresIn: '1h' }, 
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '1h' },
     }),
   ],
-  controllers: [AuthController, UsersController, WorkspaceController, DashboardController],
+  controllers: [
+    AuthController,
+    UsersController,
+    WorkspaceController,
+    DashboardController,
+    QuizController
+  ],
 })
 export class GatewayModule {}
