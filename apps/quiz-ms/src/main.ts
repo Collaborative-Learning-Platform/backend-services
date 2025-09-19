@@ -11,7 +11,7 @@ async function bootstrap() {
       transport: Transport.TCP,
       options: {
         host: '127.0.0.1',
-        port: 4004, // same port as defined in gateway
+        port: 4004, 
       },
     },
   );
@@ -29,7 +29,7 @@ async function bootstrap() {
   // app.useGlobalFilters(new AllExceptionsFilter());
 
   await app.listen();
-  console.log('Quiz microservice is listening on TCP port 4004');
+  console.log('Quiz microservice is listening on TCP port 4005');
 }
 
 bootstrap();
