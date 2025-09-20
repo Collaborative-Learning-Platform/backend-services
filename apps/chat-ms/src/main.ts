@@ -1,35 +1,29 @@
 import { NestFactory } from '@nestjs/core';
-import { QuizMsModule } from './quiz-ms.module';
+import { ChatMsModule } from './chat-ms.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe } from '@nestjs/common';
-// import { AllExceptionsFilter } from './filters/all-exception.filter';
+import { AllExceptionsFilter } from './filters/all-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
-    QuizMsModule,
+    ChatMsModule,
     {
       transport: Transport.TCP,
       options: {
         host: '127.0.0.1',
-        port: 4004, 
+        port: 4005,
       },
     },
   );
-
-  // Apply global pipes for validation
-  app.useGlobalPipes(
-    new ValidationPipe({
+  app.useGlobalPipes(new ValidationPipe(
+    {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-    }),
-  );
+    },
+  ));
 
-  // Apply global exception filter
-  // app.useGlobalFilters(new AllExceptionsFilter());
-
+  app.useGlobalFilters(new AllExceptionsFilter());
   await app.listen();
-  console.log('Quiz microservice is listening on TCP port 4005');
 }
-
 bootstrap();

@@ -8,6 +8,8 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: process.cwd() + '/env/.gateway.env' });
 import { WorkspaceController } from './workspace/workspace.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
+import { ChatController } from './chat/chat.controller';
+import { ChatGateway } from './chat/chat.gateway';
 import { QuizController } from './quiz/quiz.controller';
 
 @Module({
@@ -21,28 +23,36 @@ import { QuizController } from './quiz/quiz.controller';
           port: 4000,
         },
       },
-      {
-        name: 'USER_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 4001,
+    {
+      name: 'USER_SERVICE',
+      transport: Transport.TCP,
+      options: {
+        host: '127.0.0.1',
+        port: 4001, 
+      },
+    },
+    {
+      name: 'WORKSPACE_SERVICE',
+      transport: Transport.TCP,
+      options: {
+        host: '127.0.0.1',
+        port: 4003,
+      },
+    },
+    {
+      name: 'QUIZ_SERVICE',
+      transport: Transport.TCP,
+      options: {
+        host: '127.0.0.1',
+        port: 4004,
         },
       },
       {
-        name: 'WORKSPACE_SERVICE',
+        name: 'CHAT_SERVICE',
         transport: Transport.TCP,
         options: {
           host: '127.0.0.1',
-          port: 4003,
-        },
-      },
-      {
-        name: 'QUIZ_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 4004,
+          port: 4005,
         },
       },
     ]),
@@ -57,6 +67,7 @@ import { QuizController } from './quiz/quiz.controller';
     WorkspaceController,
     DashboardController,
     QuizController
-  ],
+  , ChatController],
+  providers: [ChatGateway],
 })
 export class GatewayModule {}
