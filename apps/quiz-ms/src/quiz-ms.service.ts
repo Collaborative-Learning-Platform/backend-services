@@ -7,8 +7,9 @@ import { QuizQuestion } from './entity/quiz-question.entity';
 import { User } from '../../user-ms/src/entity/user.entity';
 import { Group } from '../../workspace-ms/src/entity/group.entity';
 import { CreateQuizDto } from './dto/create-quiz.dto';
+import { UpdateQuizQuestionDto } from './dto/update-quiz-question.dto';
+import { CreateQuizQuestionDto } from './dto/create-quiz-question.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
-import { stat } from 'fs';
 
 @Injectable()
 export class QuizMsService {
@@ -156,23 +157,117 @@ export class QuizMsService {
 
   async deleteQuiz(quizId: string) {
     try {
-      const quiz= await this.quizRepo.findOne({ where: { quizId: quizId } });
-      if (!quiz){
-        return{
-          success:false,
-          statusCode:404,
-          message:'Quiz not found'
-        }
-      }else {
+      const quiz = await this.quizRepo.findOne({ where: { quizId: quizId } });
+      if (!quiz) {
+        return {
+          success: false,
+          statusCode: 404,
+          message: 'Quiz not found',
+        };
+      } else {
         await this.quizRepo.remove(quiz);
-        return{
-          success:true,
-          statusCode:200,
-          message:'Quiz deleted successfully'
-        }
+        return {
+          success: true,
+          statusCode: 200,
+          message: 'Quiz deleted successfully',
+        };
       }
-    } catch (error){
+    } catch (error) {
       throw new BadRequestException('Error deleting quiz: ' + error.message);
+    }
+  }
+
+  async createQuizQuestion(createQuizQuestionDTo: CreateQuizQuestionDto) {
+    try {
+      const quiz = await this.quizRepo.findOne({
+        where: { quizId: createQuizQuestionDTo.quizId },
+      });
+      if (!quiz) {
+        return {
+          success: false,
+          statusCode: 404,
+          message: 'Quiz not found',
+        };
+      } else {
+        const newQuestion = this.quizQuestionRepo.create({
+          question_no: createQuizQuestionDTo.question_no,
+          quizId: createQuizQuestionDTo.quizId,
+          question_type: createQuizQuestionDTo.question_type,
+          question: createQuizQuestionDTo.question,
+          correct_answer: createQuizQuestionDTo.correct_answer,
+        });
+        await this.quizQuestionRepo.save(newQuestion);
+        return {
+          success: true,
+          statusCode: 201,
+          data: newQuestion,
+        };
+      }
+    } catch (error) {
+      throw new BadRequestException(
+        'Error creating quiz question: ' + error.message,
+      );
+    }
+  }
+
+  async getQuizQuestions(quizId: string) {
+    try {
+      const quiz = await this.quizRepo.findOne({ where: { quizId: quizId } });
+      if (!quiz) {
+        return {
+          success: false,
+          statusCode: 404,
+          message: 'Quiz not found',
+        };
+      } else {
+        const questions = await this.quizQuestionRepo.find({
+          where: { quizId: quizId },
+        });
+        return {
+          success: true,
+          statusCode: 200,
+          data: questions,
+        };
+      }
+    } catch (error) {
+      throw new BadRequestException(
+        'Error fetching quiz questions: ' + error.message,
+      );
+    }
+  }
+
+  async updateQuizQuestion(
+    quizId: string,
+    question_no: number,
+    updateData: Partial<Omit<QuizQuestion, 'quizId' | 'question_no'>>,
+  ) {
+    try {
+      const question = await this.quizQuestionRepo.findOne({
+        where: { quizId, question_no },
+        relations: ['quiz'],
+      });
+
+      if (!question) {
+        return {
+          success: false,
+          statusCode: 404,
+          message: 'Question not found for the given quiz',
+        };
+      }
+
+      Object.assign(question, updateData);
+      await this.quizQuestionRepo.save(question);
+
+      return {
+        success: true,
+        statusCode: 200,
+        message: 'Question updated successfully',
+        data: question,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        'Error updating quiz question: ' + error.message,
+      );
     }
   }
 }
