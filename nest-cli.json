@@ -19,6 +19,15 @@
         "tsConfigPath": "apps/auth-ms/tsconfig.app.json"
       }
     },
+    "chat-ms": {
+      "type": "application",
+      "root": "apps/chat-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/chat-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/chat-ms/tsconfig.app.json"
+      }
+    },
     "gateway": {
       "type": "application",
       "root": "apps/gateway",

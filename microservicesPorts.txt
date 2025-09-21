@@ -3,4 +3,5 @@ auth : 4000
 user:4001
 notification : 4002
 workspace:4003
+chat: 4005
 quiz:4004
