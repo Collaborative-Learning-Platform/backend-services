@@ -13,6 +13,8 @@ import { Response } from 'express';
 import { CreateQuizDto } from '../../../quiz-ms/src/dto/create-quiz.dto';
 import { UpdateQuizDto } from '../../../quiz-ms/src/dto/update-quiz.dto';
 import { handleValidationError } from '../utils/validationErrorHandler';
+import { CreateQuizQuestionDto } from 'apps/quiz-ms/src/dto/create-quiz-question.dto';
+
 
 @Controller('quiz')
 export class QuizController {
@@ -92,5 +94,29 @@ export class QuizController {
     );
 
     return res.json(response);
+  }
+
+  @Post('question/create')
+  async createQuizQuestion(@Body() createQuizQuestionDto: CreateQuizQuestionDto,@Res() res: Response) {
+    const response = await lastValueFrom(
+      this.quizClient.send({ cmd: 'create_quiz_question' }, createQuizQuestionDto),
+    );
+    return res.json(response);
+  }
+
+  @Get('question/:quizId')
+  async getQuizQuestions(@Param('quizId') quizId: string,@Res() res: Response) {
+    const response = await lastValueFrom(
+      this.quizClient.send({ cmd: 'get_quiz_questions' }, quizId),
+    );
+    return res.json(response);
+  }
+
+  @Post('question/update')
+  async updateQuizQuestion(@Body() updateQuizQuestionDto: UpdateQuizDto,@Res() res: Response) {
+    const response = await lastValueFrom(
+      this.quizClient.send({cmd:'update_quiz_question'}, updateQuizQuestionDto),
+    );
+    return res.json(response)
   }
 }
