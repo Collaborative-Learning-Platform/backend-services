@@ -29,7 +29,7 @@ async function bootstrap() {
   // app.useGlobalFilters(new AllExceptionsFilter());
 
   await app.listen();
-  console.log('Quiz microservice is listening on TCP port 4005');
+  console.log('Quiz microservice is listening on TCP port 4004');
 }
 
 bootstrap();

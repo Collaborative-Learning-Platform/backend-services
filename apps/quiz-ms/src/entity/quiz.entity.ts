@@ -1,6 +1,12 @@
-import { Group } from "../../../workspace-ms/src/entity/group.entity";
-import { User } from "../../../user-ms/src/entity/user.entity";
-import { Column, Entity,  ManyToOne, PrimaryGeneratedColumn, JoinColumn } from "typeorm";
+import { Group } from '../../../workspace-ms/src/entity/group.entity';
+import { User } from '../../../user-ms/src/entity/user.entity';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('quiz')
 export class Quiz {
@@ -16,6 +22,10 @@ export class Quiz {
   @Column({ type: 'uuid', nullable: false })
   groupId: string;
 
+  @ManyToOne(() => Group)
+  @JoinColumn({ name: 'groupId' })
+  group: Group;
+  
   @Column({ type: 'uuid', nullable: false })
   createdById: string;
 

@@ -7,7 +7,6 @@ import { QuizQuestion } from './entity/quiz-question.entity';
 import { User } from '../../user-ms/src/entity/user.entity';
 import { Group } from '../../workspace-ms/src/entity/group.entity';
 import { CreateQuizDto } from './dto/create-quiz.dto';
-import { UpdateQuizQuestionDto } from './dto/update-quiz-question.dto';
 import { CreateQuizQuestionDto } from './dto/create-quiz-question.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 
@@ -90,19 +89,36 @@ export class QuizMsService {
           statusCode: 404,
           message: 'User not found',
         };
-      } else {
-        const userQuizzes = await this.quizRepo.find({
-          where: { createdById: userId },
-        });
+      } 
+
+      const quizzes = await this.quizRepo
+        .createQueryBuilder('quiz')
+        .innerJoin('group', 'g', 'quiz."groupId" = g."groupId"')
+        .innerJoin('workspace', 'w', 'g."workspaceId" = w."workspaceId"')
+        .where('quiz."createdById" = :userId', { userId })
+        .select([
+          'quiz."quizId"',
+          'quiz."title"',
+          'quiz."description"',
+          'quiz."deadline"',
+          'quiz."isPublished"',
+          'g."groupId"',
+          'w."name" AS "workspaceName"', // fetch workspace name
+        ])
+        .getRawMany();
+
         return {
           success: true,
           statusCode: 200,
-          data: userQuizzes,
+          data: quizzes,
         };
-      }
     } catch (error) {
-      throw new BadRequestException('Error fetching quizzes: ' + error.message);
-    }
+      return {
+        success: false,
+        statusCode: 400,
+        message: 'Error fetching quizzes: ' + error.message,
+      };
+    }  
   }
 
   async getQuizByGroupId(groupId: string) {
@@ -270,4 +286,30 @@ export class QuizMsService {
       );
     }
   }
+
+  // async deleteQuizQuestion(quizId: string, question_no: number) {
+  //   try {
+  //     const question = await this.quizQuestionRepo.findOne({ where: { quizId, question_no } });
+  //     if (!question) {
+  //       return {
+  //         success: false,
+  //         statusCode: 404,
+  //         message: 'Question not found for the given quiz',
+  //       };
+  //     } else{
+  //       await this.quizQuestionRepo.remove(question);
+  //       return {
+  //         success: true,
+  //         statusCode: 200,
+  //         message: 'Question deleted successfully',
+  //       };
+  //     }
+  //   } catch(err){
+  //     return {
+  //       success: false,
+  //       statusCode: 400,
+  //       message: 'Error deleting quiz question: ' + err.message,
+  //     };
+  //   }
+  // }
 }

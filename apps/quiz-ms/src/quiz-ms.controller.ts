@@ -25,8 +25,8 @@ export class QuizMsController {
   }
 
   @MessagePattern({ cmd: 'get_quizzes_by_user' })
-  getQuizzesByUserId(@Payload() userId: string) {
-    return this.quizMsService.getQuizzesByUserId(userId);
+  getQuizzesByUserId(data: { userId: string }) {
+    return this.quizMsService.getQuizzesByUserId(data.userId);
   }
 
   @MessagePattern({ cmd: 'get_quizzes_by_group' })
@@ -57,10 +57,17 @@ export class QuizMsController {
   }
 
   @MessagePattern({ cmd: 'update_quiz_question' })
-  updateQuizQuestion(
-    @Payload() updateQuizQuestionDto: UpdateQuizQuestionDto,
-  ) {
-    const { quizId, question_no,...updatedData } = updateQuizQuestionDto;
-    return this.quizMsService.updateQuizQuestion(quizId, question_no,updatedData);
+  updateQuizQuestion(@Payload() updateQuizQuestionDto: UpdateQuizQuestionDto) {
+    const { quizId, question_no, ...updatedData } = updateQuizQuestionDto;
+    return this.quizMsService.updateQuizQuestion(
+      quizId,
+      question_no,
+      updatedData,
+    );
   }
+
+  // @MessagePattern({ cmd: 'delete_quiz_question' })
+  // deleteQuizQuestion(data: { quizId: string; question_no: number }) {
+  //   return this.quizMsService.deleteQuizQuestion(data.quizId, data.question_no);
+  // }
 }
