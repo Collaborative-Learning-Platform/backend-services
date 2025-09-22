@@ -15,7 +15,6 @@ import { UpdateQuizDto } from '../../../quiz-ms/src/dto/update-quiz.dto';
 import { handleValidationError } from '../utils/validationErrorHandler';
 import { CreateQuizQuestionDto } from 'apps/quiz-ms/src/dto/create-quiz-question.dto';
 
-
 @Controller('quiz')
 export class QuizController {
   constructor(
@@ -97,15 +96,24 @@ export class QuizController {
   }
 
   @Post('question/create')
-  async createQuizQuestion(@Body() createQuizQuestionDto: CreateQuizQuestionDto,@Res() res: Response) {
+  async createQuizQuestion(
+    @Body() createQuizQuestionDto: CreateQuizQuestionDto,
+    @Res() res: Response,
+  ) {
     const response = await lastValueFrom(
-      this.quizClient.send({ cmd: 'create_quiz_question' }, createQuizQuestionDto),
+      this.quizClient.send(
+        { cmd: 'create_quiz_question' },
+        createQuizQuestionDto,
+      ),
     );
     return res.json(response);
   }
 
   @Get('question/:quizId')
-  async getQuizQuestions(@Param('quizId') quizId: string,@Res() res: Response) {
+  async getQuizQuestions(
+    @Param('quizId') quizId: string,
+    @Res() res: Response,
+  ) {
     const response = await lastValueFrom(
       this.quizClient.send({ cmd: 'get_quiz_questions' }, quizId),
     );
@@ -113,10 +121,31 @@ export class QuizController {
   }
 
   @Post('question/update')
-  async updateQuizQuestion(@Body() updateQuizQuestionDto: UpdateQuizDto,@Res() res: Response) {
+  async updateQuizQuestion(
+    @Body() updateQuizQuestionDto: UpdateQuizDto,
+    @Res() res: Response,
+  ) {
     const response = await lastValueFrom(
-      this.quizClient.send({cmd:'update_quiz_question'}, updateQuizQuestionDto),
+      this.quizClient.send(
+        { cmd: 'update_quiz_question' },
+        updateQuizQuestionDto,
+      ),
     );
-    return res.json(response)
+    return res.json(response);
   }
+
+  // @Post('question/delete/:quizId/:question_no')
+  // async deleteQuizQuestion(
+  //   @Param('quizId') quizId: string,
+  //   @Param('question_no') question_no: number,
+  //   @Res() res: Response,
+  // ) {
+  //   const response = await lastValueFrom(
+  //     this.quizClient.send(
+  //       { cmd: 'delete_quiz_question' },
+  //       { quizId, question_no },
+  //     ),
+  //   );
+  //   return res.json(response);
+  // }
 }
