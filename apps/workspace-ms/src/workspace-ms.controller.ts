@@ -5,6 +5,7 @@ import   {workspaceCreationDto}  from './dto/workspaceCreation.dto';
 import { addUserToWorkspaceDto } from './dto/addUserToWorkspace.dto';
 import { createGroupDto } from './dto/createGroup.dto';
 
+
 @Controller()
 export class WorkspaceMsController {
   constructor(private readonly workspaceMsService: WorkspaceMsService) {}
@@ -28,6 +29,41 @@ export class WorkspaceMsController {
     return this.workspaceMsService.addUserToWorkspace(data);
   }
 
+  //bulk add users to a workspace
+  @MessagePattern({ cmd: 'add_users_to_workspace' })
+  async addUsersToWorkspace(@Payload() data: {workspaceId: string, fileData: { originalname: string; mimetype: string; buffer: any }}) {
+    // console.log(data)
+    const workspaceId = data.workspaceId;
+    const fileData = data.fileData;
+    if(!fileData || !fileData.buffer){
+      return {
+        success: false,
+        message: "No file data or buffer provided"
+      };
+    }
+    let buffer: Buffer;
+
+    if(Buffer.isBuffer(fileData.buffer))
+      buffer = fileData.buffer;
+    else if(fileData?.buffer?.type === 'Buffer' && Array.isArray(fileData.buffer.data))
+      buffer = Buffer.from(fileData.buffer.data);
+    else{
+      console.error("Invalid buffer format received");
+      throw new Error("Invalid buffer format");
+    }
+
+    return this.workspaceMsService.addUsersToWorkspace({
+      workspaceId: workspaceId,
+      fileData: {
+        originalname: fileData.originalname,
+        mimetype: fileData.mimetype,
+        buffer
+      },
+    });
+  }
+
+
+
   //get workspaces for a user by user id -> user use case
   @MessagePattern({cmd:'get_workspaces_by_user'})
   async getWorkspaces(@Payload() data: {userId: string}) {
@@ -40,6 +76,20 @@ export class WorkspaceMsController {
   async getAllWorkspaces() {
     console.log('Received get all workspaces request at microservice:');
     return this.workspaceMsService.getAllWorkspaces();
+  }
+
+  //get workspace details by id
+  @MessagePattern({cmd:'get_workspace'})
+  async getWorkspace(@Payload() data: {workspaceId: string}) {
+    console.log('Received get workspace by id request at microservice:', data);
+    return this.workspaceMsService.getWorkspaceById(data);
+  }  
+
+  //get workspace users by workspace id
+  @MessagePattern({cmd:'get_workspace_users'})
+  async getWorkspaceUsers(@Payload() data: {workspaceId: string}) {
+    console.log('Received get workspace users request at microservice:', data);
+    return this.workspaceMsService.getWorkspaceUsers(data);
   }
 
   //creating group in a workspace

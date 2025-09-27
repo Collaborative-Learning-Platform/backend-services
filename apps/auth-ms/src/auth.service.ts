@@ -140,6 +140,28 @@ export class AuthService {
     }
   }
 
+  async getUsersByIds(userIds: string[]) {
+    try {
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.id IN (:...userIds)', { userIds })
+        .getMany();
+      const formattedUsers = users.map((user) => ({
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      }));
+      return { success: true, users: formattedUsers };
+    } catch (err) {
+      return {
+        success: false,
+        message: 'Failed to retrieve users by IDs',
+        error: err.message,
+      };
+    }
+  }
+
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email: email } });
     if (!user) {

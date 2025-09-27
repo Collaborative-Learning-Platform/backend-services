@@ -9,7 +9,7 @@ import {
 import { Workspace } from "./workspace.entity";
 
 enum UserRole {
-  ADMIN = "tutor",
+  TUTOR = "tutor",
   USER = "user",
 } 
 

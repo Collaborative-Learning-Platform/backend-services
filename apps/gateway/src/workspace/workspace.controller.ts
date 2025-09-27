@@ -1,8 +1,11 @@
-import { Body, Controller, Get, Inject, Post, Res ,Param} from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Res ,Param, UseGuards, Req,UseInterceptors,UploadedFile} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { Response } from 'express';
 import { handleValidationError } from '../utils/validationErrorHandler';
+import { AuthGuard } from '../guards/auth.guard';
+import * as multer from 'multer';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 
 @Controller('workspace')
@@ -53,6 +56,62 @@ export class WorkspaceController {
         
     }
 
+
+    @Post('/BulkAddition/:workspaceId')
+    @UseInterceptors(FileInterceptor('file', { storage: multer.memoryStorage() }))
+    async bulkAddUsersToWorkspace(@Param('workspaceId') workspaceId: string, @UploadedFile() file: Express.Multer.File, @Res() res: Response) {
+        
+        // console.log('Received bulk add users to workspace request at gateway:', { workspaceId, file });
+
+        if (!file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file provided',
+                status: 400,
+            });
+        }
+        const fileData = {
+            originalname: file.originalname,
+            mimetype: file.mimetype,
+            buffer: file.buffer,
+        };
+
+        try{
+            const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'add_users_to_workspace' }, { workspaceId, fileData }));
+
+            if (response?.error) {
+            const ret = handleValidationError(response.error);
+            return res.json(ret);
+        }
+            if (! response?.success) {
+                return res.json({
+                    success: false,
+                    message: response.message || 'Failed to add users to workspace',
+                    status: response.status || 400,
+                });
+            }
+            return res.json({
+                success: true,
+                message: 'Users added to workspace successfully',
+                data: {
+                    summary: response.summary,
+                    existingUsers: response.existingUsers,
+                    failedUsers: response.failedUsers,
+                    results: response.results,
+                },
+            });
+        }catch (error) {
+            console.error('Error occurred while sending request to microservice:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Internal server error',
+                status: 500,
+            });
+        }
+
+        
+    }
+
     @Get('getWorkspacesByUser/:user_id')
     async getWorkspaces(@Param('user_id') userId: string, @Res() res: Response) {
         console.log('Received get workspaces request at gateway:', userId);
@@ -79,10 +138,10 @@ export class WorkspaceController {
         })
     }
 
+    
     @Get('getAllWorkspaces')
-    async getAllWorkspaces( @Res() res: Response) {
+    async getAllWorkspaces(@Req() req: Request, @Res() res: Response) {
         const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'get_all_workspaces' }, {}));
-
         if (response?.error) {
             const ret = handleValidationError(response.error);
             return res.json(ret);
@@ -101,8 +160,65 @@ export class WorkspaceController {
         })
     }
 
+    @Get('getWorkspace/:workspace_id')
+    async getWorkspace(@Param('workspace_id') workspaceId: string, @Res() res: Response) {
+        console.log('Received get workspace request at gateway:', workspaceId);
+        const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'get_workspace' }, { workspaceId }));
+
+        if (response?.error) {
+            const ret = handleValidationError(response.error);
+            return res.json(ret);
+        }
+
+        if (!response?.success) {
+            return res.json({
+                success: false,
+                message: response.message || 'Failed to get workspace',
+                status: response.status || 400,
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: 'Workspace fetched successfully',
+            data: response.data,
+        });
+    }
+
+    @Get ('fetchWorkspaceUsers/:workspaceId')
+    async fetchWorkspaceUsers(@Param('workspaceId') workspaceId: string, @Res() res: Response) {
+        console.log('Received fetch workspace users request at gateway:', workspaceId);
+        const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'get_workspace_users' }, { workspaceId }));
+        if (response?.error) {
+            const ret = handleValidationError(response.error);
+            return res.json(ret);
+        }
+        if (!response?.success) {
+            return res.json({
+                success: false,
+                message: response.message || 'Failed to fetch workspace users',
+                status: response.status || 400,
+            });
+        }
+        return res.json({
+            success: true,
+            message: 'Workspace users fetched successfully',
+            data: response.data,
+        });
+    }
+
+
+
+
+
+    @UseGuards(AuthGuard)
     @Post('createGroup')
-    async createGroup(@Body() data: any, @Res() res: Response) {
+    async createGroup(@Req() req: any, @Res() res: Response) {
+        const body = req.body;
+        const data = {
+            ...body,
+            userId: req.user.userId,
+        };
         console.log('Received create group request at gateway:', data);
         const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'create_group' }, data));
 
@@ -127,6 +243,7 @@ export class WorkspaceController {
         });
 
     }
+
 
     @Get('fetchGroups/:workspaceId')
     async fetchGroups(@Param('workspaceId') workspaceId: string, @Res() res: Response) {

@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn, Unique,OneToMany } from "typeorm";
+import { Workspace } from "./workspace.entity";
+import { UserGroup } from "./user-group.entity";
 
 enum GroupType {
     MAIN = "Main",
@@ -30,7 +32,14 @@ export class Group {
     @Column({type:'uuid'})
     createdBy: string;
 
+    // @Unique(["workspaceId", "name"])
 
+    @ManyToOne(() => Workspace, workspace => workspace.groups, { onDelete: "CASCADE" })
+    @JoinColumn({ name: 'workspaceId' })
+    workspace: Workspace;
+
+    @OneToMany(() => UserGroup, userGroup => userGroup.group)
+    userGroups: UserGroup[];
 
     
 }

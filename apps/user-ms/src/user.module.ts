@@ -4,11 +4,11 @@ import { UserService } from './user.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entity/user.entity';
 import * as dotenv from 'dotenv';
-dotenv.config({ path: process.cwd() + '/env/.user-ms.env' });
+dotenv.config({ path: process.cwd() + '/env/.common.env' });
 
-console.log('DB_HOST:', process.env.DB_HOST);
-console.log('DB_PORT:', process.env.DB_PORT);
-console.log('DB_NAME:', process.env.DB_NAME);
+// console.log('DB_HOST:', process.env.DB_HOST);
+// console.log('DB_PORT:', process.env.DB_PORT);
+// console.log('DB_NAME:', process.env.DB_NAME);
 
 @Module({
   imports: [

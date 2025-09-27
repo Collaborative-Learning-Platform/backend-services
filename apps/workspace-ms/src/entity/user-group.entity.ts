@@ -22,4 +22,6 @@ export class UserGroup {
   @ManyToOne(() => Group, { onDelete: "CASCADE" })
   @JoinColumn({ name: "groupId" })
   group: Group;
+
+  
 }
