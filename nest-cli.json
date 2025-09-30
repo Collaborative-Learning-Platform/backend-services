@@ -28,6 +28,15 @@
         "tsConfigPath": "apps/chat-ms/tsconfig.app.json"
       }
     },
+    "document-ms": {
+      "type": "application",
+      "root": "apps/document-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/document-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/document-ms/tsconfig.app.json"
+      }
+    },
     "gateway": {
       "type": "application",
       "root": "apps/gateway",

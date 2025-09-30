@@ -1,14 +1,22 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
+import { Document } from 'apps/document-ms/src/entity/document.entity';
+
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  ManyToMany,
+} from 'typeorm';
 
 export enum UserRole {
-  USER = "user",
-  ADMIN = "admin",
-  TUTOR = "tutor",
+  USER = 'user',
+  ADMIN = 'admin',
+  TUTOR = 'tutor',
 }
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ unique: true, nullable: false })
@@ -20,10 +28,10 @@ export class User {
   @Column({ nullable: false })
   name: string;
 
-  @Column({ type: "enum", enum: UserRole, default: UserRole.USER })
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  @CreateDateColumn({ type: "timestamp with time zone" }) 
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   created_at: Date;
 
   @Column()

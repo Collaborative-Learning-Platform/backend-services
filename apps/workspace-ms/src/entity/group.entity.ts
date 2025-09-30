@@ -1,36 +1,35 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+} from 'typeorm';
 
 enum GroupType {
-    MAIN = "Main",
-    CUSTOM = "Custom"
+  MAIN = 'Main',
+  CUSTOM = 'Custom',
 }
-
 
 @Entity()
 export class Group {
-    @PrimaryGeneratedColumn("uuid")
-    groupId: string;
-    
-    @Column({ unique: true })
-    name: string;
+  @PrimaryGeneratedColumn('uuid')
+  groupId: string;
 
-    @Column()
-    description: string;
+  @Column({ unique: true })
+  name: string;
 
-    @Column({ type: 'enum', enum: GroupType, default: GroupType.MAIN })
-    type: GroupType;
+  @Column()
+  description: string;
 
-    @Column({ type: 'uuid' })
-    workspaceId: string;
+  @Column({ type: 'enum', enum: GroupType, default: GroupType.MAIN })
+  type: GroupType;
 
+  @Column({ type: 'uuid' })
+  workspaceId: string;
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @Column({type:'uuid'})
-    createdBy: string;
-
-
-
-    
+  @Column({ type: 'uuid' })
+  createdBy: string;
 }
