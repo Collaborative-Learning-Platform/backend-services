@@ -11,10 +11,7 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const token = request.cookies['access_token'];
     
-    if (!token) {
-      console.log("Token not found");
-      return false;
-    }
+    
 
     try {
       const payload = this.jwtService.verify(token);

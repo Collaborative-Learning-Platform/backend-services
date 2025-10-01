@@ -112,7 +112,7 @@ export class WorkspaceController {
         })
     }
 
-    
+    @UseGuards(AuthGuard)
     @Get('getAllWorkspaces')
     async getAllWorkspaces(@Req() req: Request, @Res() res: Response) {
         const response = await lastValueFrom(this.WorkspaceClient.send({ cmd: 'get_all_workspaces' }, {}));

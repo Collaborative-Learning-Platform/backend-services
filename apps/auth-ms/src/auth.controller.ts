@@ -13,7 +13,7 @@ export class AuthController {
   @MessagePattern({ cmd: 'auth_login' })
   async login(@Payload() data: LoginDto) {
     
-    return this.authService.validateUser(data);
+    return this.authService.login(data);
   }
 
   @MessagePattern({ cmd: 'auth_first_time_login' })

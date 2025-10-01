@@ -7,12 +7,14 @@ import {
   HttpException,
   Body,
   Get,
-  Param
+  Param,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import * as multer from 'multer';
 import { lastValueFrom } from 'rxjs';
 import { handleValidationError } from '../utils/validationErrorHandler';
@@ -28,7 +30,7 @@ export class AuthController {
     @Body() data: { email: string; password: string },
     @Res() res: Response,
   ) {
-    console.log('Received login request at gateway:', data);
+    
 
     
     const response = await lastValueFrom(
@@ -119,15 +121,26 @@ export class AuthController {
 
 
 
-  @Post('refresh-token')
-  async refreshToken(@Body() data: { refresh_token: string }, @Res() res: Response) {
-    const response = await lastValueFrom(
-      this.authClient.send({ cmd: 'auth_refresh_token' }, data),
-    );
+  @Get('refresh-token')
+  async refreshToken(@Req() req: Request, @Res() res: Response) {
+   
+    const refresh_token = req.cookies['refresh_token'];
+    
 
+     if (!refresh_token) {
+      throw new UnauthorizedException('Refresh token not found');
+    }
+
+    const response = await lastValueFrom(
+      this.authClient.send({ cmd: 'auth_refresh_token' }, { refresh_token }),
+    );
+    
 
     if (response?.error) {
       const ret = handleValidationError(response.error);
+      if(ret.status === 403 || ret.status === 401){
+        throw new UnauthorizedException('Invalid refresh token');
+      }
       return res.json(ret);
     }
 

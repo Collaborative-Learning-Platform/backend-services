@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ClientProxy } from '@nestjs/microservices';
 import { welcomeTemplate } from './templates/welcomeMail';
 import { resetPasswordTemplate } from './templates/resetPasswordMail';
+import { stat } from 'fs';
 
 @Injectable()
 export class AuthService {
@@ -26,7 +27,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(credentials: LoginDto) {
+  async login(credentials: LoginDto) {
     // console.log(credentials)
     const user = await this.userRepository.findOne({
       where: { email: credentials.email },
@@ -217,12 +218,14 @@ export class AuthService {
       where: { userId: userId },
     });
 
+    console.log("existingRefreshToken:", existingRefreshToken);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
     if (existingRefreshToken) {
       existingRefreshToken.refresh_token = refresh_token;
       existingRefreshToken.expiresAt = expiresAt;
+      await this.refreshTokenRepository.save(existingRefreshToken);
     } else {
       await this.refreshTokenRepository.save({
         userId: userId,
@@ -237,12 +240,14 @@ export class AuthService {
       where: { refresh_token: token, expiresAt: MoreThan(new Date()) },
     });
 
+    
     if (!refreshToken) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     return this.generateToken(refreshToken.userId);
   }
+
 
   async processFileAndCreateUsers(fileData: {
     originalname: string;
