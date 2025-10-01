@@ -106,6 +106,12 @@ export class WorkspaceMsController {
     return this.workspaceMsService.createGroup(data);
   }
 
+  @MessagePattern({cmd:'create_custom_group'})
+  async createCustomGroup(@Payload() data: createGroupDto) {
+    console.log('Received create custom group request at microservice:', data);
+    return this.workspaceMsService.createCustomGroup(data);
+  }
+
   @MessagePattern({cmd:'get_group_details'})
   async getGroupDetails(@Payload() data: {groupId: string}) {
     console.log('Received get group details request at microservice:', data);

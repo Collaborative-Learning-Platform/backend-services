@@ -419,6 +419,50 @@ async getWorkspaceUsers(data: { workspaceId: string }): Promise<any> {
     }
   }
 
+  async createCustomGroup(data: createGroupDto) {
+    const existingGroup = await this.groupRepository.findOne({ where: { name: data.name, workspaceId: data.workspaceId } });
+    if (existingGroup) {
+      return {
+        success: false,
+        message: 'Group with this name already exists in the workspace',
+        status: 400,
+      };
+    }
+
+    try {
+      const group = this.groupRepository.create({
+        name: data.name,
+        description: data.description,
+        type: data.type,
+        workspaceId: data.workspaceId,
+        createdBy: data.userId,
+      });
+
+      const savedGroup = await this.groupRepository.save(group);
+
+      const userGroup = this.userGroupRepository.create({
+        userId: data.userId,
+        groupId: savedGroup.groupId,
+      });
+
+      this.addUsersToGroup({ groupId: savedGroup.groupId, userIds: [data.userId] });
+
+      await this.userGroupRepository.save(userGroup);
+
+      return {
+        success: true,
+        message: 'Custom group created successfully',
+        data: savedGroup,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Custom group creation failed: ${error.message}`,
+        status: 500,
+      };
+    }
+  }
+
   async getGroupDetails(data: { groupId: string }) : Promise<any> {
     try {
       const group = await this.groupRepository.findOne({ where: { groupId: data.groupId } });
