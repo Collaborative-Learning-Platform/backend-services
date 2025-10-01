@@ -45,7 +45,10 @@ export class AuthController {
     return this.authService.getUsers();
   }
 
-
+  @MessagePattern({ cmd: 'get_users_by_ids' })
+  async getUsersByIds(@Payload() data: { userIds: string[] }) {
+    return this.authService.getUsersByIds(data.userIds);
+  }
 
   @MessagePattern({ cmd: 'bulk_register_file' })
   async bulkRegisterFile(fileData: { originalname: string; buffer: any }) {

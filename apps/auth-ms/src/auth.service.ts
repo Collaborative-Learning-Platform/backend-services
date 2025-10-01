@@ -107,6 +107,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        profile_picture: user.profile_picture,
       },
     };
   }
@@ -124,6 +125,7 @@ export class AuthService {
           email: user.email,
           role: user.role,
           joinDate: formattedDate,
+          avatar: user.profile_picture,
         };
       });
 
@@ -135,6 +137,29 @@ export class AuthService {
       return {
         success: false,
         message: 'Failed to retrieve users',
+        error: err.message,
+      };
+    }
+  }
+
+  async getUsersByIds(userIds: string[]) {
+    try {
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.id IN (:...userIds)', { userIds })
+        .getMany();
+      const formattedUsers = users.map((user) => ({
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.profile_picture,
+      }));
+      return { success: true, users: formattedUsers };
+    } catch (err) {
+      return {
+        success: false,
+        message: 'Failed to retrieve users by IDs',
         error: err.message,
       };
     }

@@ -2,8 +2,9 @@ import { Controller, Get } from '@nestjs/common';
 import { WorkspaceMsService } from './workspace-ms.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import   {workspaceCreationDto}  from './dto/workspaceCreation.dto';
-import { addUserToWorkspaceDto } from './dto/addUserToWorkspace.dto';
 import { createGroupDto } from './dto/createGroup.dto';
+import { addUsersToGroupDto } from './dto/addUsersToGroup.dto';
+
 
 @Controller()
 export class WorkspaceMsController {
@@ -14,6 +15,8 @@ export class WorkspaceMsController {
     return this.workspaceMsService.getHello();
   }
 
+  //workspace related functions
+
   //creating a workspace
   @MessagePattern({ cmd: 'create_workspace' })
   async create(@Payload() data: workspaceCreationDto){
@@ -21,12 +24,47 @@ export class WorkspaceMsController {
     return this.workspaceMsService.createWorkspace(data);
   }
 
-  //adding user to a workspace -> I think maybe we should change this to bulk addition
-  @MessagePattern({cmd:'add_user_to_workspace'})
-  async addUserToWorkspace(@Payload() data: addUserToWorkspaceDto) {
-    // console.log('Received add user to workspace request at microservice:', data);
-    return this.workspaceMsService.addUserToWorkspace(data);
+  // //adding user to a workspace -> I think maybe we should change this to bulk addition
+  // @MessagePattern({cmd:'add_user_to_workspace'})
+  // async addUserToWorkspace(@Payload() data: addUserToWorkspaceDto) {
+  //   // console.log('Received add user to workspace request at microservice:', data);
+  //   return this.workspaceMsService.addUserToWorkspace(data);
+  // }
+
+  //bulk add users to a workspace
+  @MessagePattern({ cmd: 'add_users_to_workspace' })
+  async addUsersToWorkspace(@Payload() data: {workspaceId: string, fileData: { originalname: string; mimetype: string; buffer: any }}) {
+    // console.log(data)
+    const workspaceId = data.workspaceId;
+    const fileData = data.fileData;
+    if(!fileData || !fileData.buffer){
+      return {
+        success: false,
+        message: "No file data or buffer provided"
+      };
+    }
+    let buffer: Buffer;
+
+    if(Buffer.isBuffer(fileData.buffer))
+      buffer = fileData.buffer;
+    else if(fileData?.buffer?.type === 'Buffer' && Array.isArray(fileData.buffer.data))
+      buffer = Buffer.from(fileData.buffer.data);
+    else{
+      console.error("Invalid buffer format received");
+      throw new Error("Invalid buffer format");
+    }
+
+    return this.workspaceMsService.addUsersToWorkspace({
+      workspaceId: workspaceId,
+      fileData: {
+        originalname: fileData.originalname,
+        mimetype: fileData.mimetype,
+        buffer
+      },
+    });
   }
+
+
 
   //get workspaces for a user by user id -> user use case
   @MessagePattern({cmd:'get_workspaces_by_user'})
@@ -42,11 +80,42 @@ export class WorkspaceMsController {
     return this.workspaceMsService.getAllWorkspaces();
   }
 
+  //get workspace details by id
+  @MessagePattern({cmd:'get_workspace'})
+  async getWorkspace(@Payload() data: {workspaceId: string}) {
+    console.log('Received get workspace by id request at microservice:', data);
+    return this.workspaceMsService.getWorkspaceById(data);
+  }  
+
+  //get workspace users by workspace id
+  @MessagePattern({cmd:'get_workspace_users'})
+  async getWorkspaceUsers(@Payload() data: {workspaceId: string}) {
+    console.log('Received get workspace users request at microservice:', data);
+    return this.workspaceMsService.getWorkspaceUsers(data);
+  }
+
+//===================================================================================================================================
+//Group related functions
+
+
+
   //creating group in a workspace
   @MessagePattern({cmd:'create_group'})
   async createGroup(@Payload() data: createGroupDto) {
     console.log('Received create group request at microservice:', data);
     return this.workspaceMsService.createGroup(data);
+  }
+
+  @MessagePattern({cmd:'create_custom_group'})
+  async createCustomGroup(@Payload() data: createGroupDto) {
+    console.log('Received create custom group request at microservice:', data);
+    return this.workspaceMsService.createCustomGroup(data);
+  }
+
+  @MessagePattern({cmd:'get_group_details'})
+  async getGroupDetails(@Payload() data: {groupId: string}) {
+    console.log('Received get group details request at microservice:', data);
+    return this.workspaceMsService.getGroupDetails(data);
   }
 
   //fetching groups in a workspace
@@ -56,11 +125,17 @@ export class WorkspaceMsController {
     return this.workspaceMsService.getGroups(data);
   }
 
-  //adding user to a group
-  @MessagePattern({cmd:'add_user_to_group'})
-  async addUserToGroup(@Payload() data: {userId: string, groupId: string}) {
-    console.log('Received add user to group request at microservice:', data);
-    return this.workspaceMsService.addUserToGroup(data);
+  @MessagePattern({cmd:'get_group_users'})
+  async getUsers(@Payload() data: {groupId: string}) {
+    console.log('Received get users in group request at microservice:', data);
+    return this.workspaceMsService.getUsersInGroup(data);
+  }
+
+  //adding users to a group
+  @MessagePattern({cmd:'add_users_to_group'})
+  async addUsersToGroup(@Payload() data: addUsersToGroupDto) {
+    console.log('Received add users to group request at microservice:', data);
+    return this.workspaceMsService.addUsersToGroup(data);
   }
 
   //getting workspace count and group count for a user

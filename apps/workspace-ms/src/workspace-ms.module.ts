@@ -11,6 +11,7 @@ import { UserWorkspace } from './entity/user-workspace.entity';
 import { Group } from './entity/group.entity';
 import { UserGroup } from './entity/user-group.entity';
 
+
 @Module({
   imports: [
     ClientsModule.register([
@@ -22,6 +23,14 @@ import { UserGroup } from './entity/user-group.entity';
           port: 4002,
         },
       },
+      {
+        name: 'AUTH_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4000,
+        },
+      }
     ]),
     TypeOrmModule.forRoot({
           type: 'postgres',
@@ -40,7 +49,7 @@ import { UserGroup } from './entity/user-group.entity';
       Workspace,
       UserWorkspace,
       Group,
-      UserGroup
+      UserGroup,
     ]),
   ],
   
