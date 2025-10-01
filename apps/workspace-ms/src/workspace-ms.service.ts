@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Workspace } from './entity/workspace.entity';
 import { Repository } from 'typeorm';
 import { UserWorkspace } from './entity/user-workspace.entity';
-import { addUserToWorkspaceDto } from './dto/addUserToWorkspace.dto';
 import { createGroupDto } from './dto/createGroup.dto';
 import { Group } from './entity/group.entity';
 import { UserGroup } from './entity/user-group.entity';
@@ -12,6 +11,7 @@ import { lastValueFrom } from 'rxjs';
 import * as csv from 'csv-parser';
 import * as XLSX from 'xlsx';
 import { Readable } from 'stream';
+import { addUsersToGroupDto } from './dto/addUsersToGroup.dto';
 
 
 @Injectable()
@@ -28,7 +28,8 @@ export class WorkspaceMsService {
     return 'Hello World!';
   }
 
-  
+  //workspace related functions
+
   async createWorkspace(data: any) {
     console.log(data)
     try{
@@ -62,38 +63,38 @@ export class WorkspaceMsService {
     }
   }
 
-  async addUserToWorkspace(data: addUserToWorkspaceDto) {
+  // async addUserToWorkspace(data: addUserToWorkspaceDto) {
     
-    const userWorkspace = await this.userWorkspaceRepository.findOne({
-      where: { userId: data.userId, workspaceId: data.workspaceId },
-    });
+  //   const userWorkspace = await this.userWorkspaceRepository.findOne({
+  //     where: { userId: data.userId, workspaceId: data.workspaceId },
+  //   });
 
-    if (userWorkspace) {
-      return {
-        success: false,
-        message: 'User is already a member of this workspace',
-        status: 400,
-      };
-    }
+  //   if (userWorkspace) {
+  //     return {
+  //       success: false,
+  //       message: 'User is already a member of this workspace',
+  //       status: 400,
+  //     };
+  //   }
 
-    try {
-      const userWorkspace = new UserWorkspace();
-      userWorkspace.userId = data.userId;
-      userWorkspace.workspaceId = data.workspaceId;
-      const response = await this.userWorkspaceRepository.save(userWorkspace);
-      return {
-        success: true,
-        message: 'User added to workspace successfully',
-        data: response,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to add user to workspace: ${error.message}`,
-        status: 500,
-      };
-    }
-  }
+  //   try {
+  //     const userWorkspace = new UserWorkspace();
+  //     userWorkspace.userId = data.userId;
+  //     userWorkspace.workspaceId = data.workspaceId;
+  //     const response = await this.userWorkspaceRepository.save(userWorkspace);
+  //     return {
+  //       success: true,
+  //       message: 'User added to workspace successfully',
+  //       data: response,
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: `Failed to add user to workspace: ${error.message}`,
+  //       status: 500,
+  //     };
+  //   }
+  // }
 
 
 async addUsersToWorkspace(data: any) {
@@ -332,14 +333,14 @@ async addUsersToWorkspace(data: any) {
 
 async getWorkspaceUsers(data: { workspaceId: string }): Promise<any> {
   try {
-    // 1️⃣ Fetch workspace-user mappings
+    //  Fetch workspace-user mappings
     const userWorkspaces = await this.userWorkspaceRepository.find({
       where: { workspaceId: data.workspaceId },
-      // relations: ['workspace'],
+      
     });
 
     const userIds = userWorkspaces.map((uw) => uw.userId);
-    // console.log('User IDs:', userIds);
+    
 
 
     const result = await lastValueFrom(this.authService.send(
@@ -359,6 +360,7 @@ async getWorkspaceUsers(data: { workspaceId: string }): Promise<any> {
       userId: u.userId,
       name: u.name,
       email: u.email,
+      avatar: u.avatar,
     }));
 
     const enriched = userWorkspaces.map((uw) => ({
@@ -381,7 +383,8 @@ async getWorkspaceUsers(data: { workspaceId: string }): Promise<any> {
   }
 
 
-
+//====================================================================================================================================
+//group related functions
   async createGroup(data: createGroupDto) {
     const existingGroup = await this.groupRepository.findOne({ where: { name: data.name, workspaceId: data.workspaceId } });
     if (existingGroup) {
@@ -416,8 +419,46 @@ async getWorkspaceUsers(data: { workspaceId: string }): Promise<any> {
     }
   }
 
+  async getGroupDetails(data: { groupId: string }) : Promise<any> {
+    try {
+      const group = await this.groupRepository.findOne({ where: { groupId: data.groupId } });
 
-    async getGroups(data: { workspaceId: string }) {
+      if (!group) {
+        return {  
+          success: false,
+          message: 'Group not found',
+          status: 404,
+        };
+      }
+
+      const userGroups = await this.userGroupRepository.find({
+        where: { groupId: data.groupId },
+      });
+
+      const usersIds = userGroups.map((ug) => ug.userId);
+      const memberCount = usersIds.length;
+      const users = await lastValueFrom(
+        this.authService.send({ cmd: 'get_users_by_ids' }, { userIds: usersIds })
+      ); 
+      
+
+      const detailedGroup = { ...group, memberCount, members: users.users };
+
+      return {
+        success: true,
+        message: 'Group details retrieved successfully',
+        data: detailedGroup,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to retrieve group details: ${error.message}`,
+        status: 500,
+      };
+    }
+  }
+
+  async getGroups(data: { workspaceId: string }) {
     try {
       const groups = await this.groupRepository
         .createQueryBuilder("group")
@@ -441,44 +482,87 @@ async getWorkspaceUsers(data: { workspaceId: string }): Promise<any> {
   }
 
 
-
-  async addUserToGroup(data: {userId: string, groupId: string}) {
-    try{
-      const group = await this.userGroupRepository.findOne({ where: { groupId: data.groupId } });
-      if(!group) {
+  async getUsersInGroup(data: { groupId: string }) {
+    try {
+      const userGroups = await this.userGroupRepository.find({
+        where: { groupId: data.groupId },
+      });
+      const userIds = userGroups.map((ug) => ug.userId);
+      const result = await lastValueFrom(
+        this.authService.send({ cmd: 'get_users_by_ids' }, { userIds })
+      );
+      if (!result.success) {
         return {
           success: false,
-          message: 'Group not found',
-          status: 404,
+          message: 'Failed to fetch user details from Auth Service',
+          status: 500,
         };
       }
-      const existingMembership = await this.userGroupRepository.findOne({ where: { userId: data.userId, groupId: data.groupId } });
-      if(existingMembership) {
-        return {
-          success: false,
-          message: 'User is already a member of the group',
-          status: 400,
-        };
-      }
+      return {
+        success: true,
+        message: 'Group users retrieved successfully',
+        data: result.users,
+      };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to add user to group: ${error.message}`,
+        message: `Failed to retrieve group users: ${error.message}`,
         status: 500,
       };
     }
-    const result = await this.userGroupRepository.save({ userId: data.userId, groupId: data.groupId });
-    return {
-      success: true,
-      message: 'User added to group successfully',
-      data: result,
-    };
-
-    
   }
 
+  async addUsersToGroup(data: addUsersToGroupDto) {
+    //front end only sends non existing users to be added
+    const groupId = data.groupId;
+    const userIds = data.userIds;
+    const failedUsers: string[] = [];
+
+    
+
+    const TempResults: {
+      userId: string;
+      success: boolean;
+      message: string;
+    }[] = [];
+
+    let successAmount = 0;
+
+    for (const userId of userIds) {
+      try{
+        const userGroup = this.userGroupRepository.create({
+          userId,
+          groupId,
+        }
+        );
+        await this.userGroupRepository.save(userGroup);
+        successAmount++;
+        TempResults.push({
+          userId,
+          success: true,
+          message: 'User added to group successfully',
+        });
+      } catch (error) {
+        failedUsers.push(userId);
+        TempResults.push({
+          userId,
+          success: false,
+          message: `Failed to add user to group: ${error.message}`,
+        });
+      }
+    }
 
 
+    return {
+      success: true,
+      message: 'Users added to group successfully',
+      data: {
+        AddedUsers: userIds.filter((id) => !failedUsers.includes(id)),
+        TempResults,
+        successAmount,
+      },
+    };
+  }
 
 
   async getUserStats(data: {userId: string}) {
@@ -509,19 +593,44 @@ async getWorkspaceUsers(data: { workspaceId: string }): Promise<any> {
   }
 
 
-  async getUserGroupsInWorkspace(data: {userId: string, workspaceId: string}) {
+
+  async getUserGroupsInWorkspace(data: { userId: string; workspaceId: string }) {
     try {
       const groups = await this.groupRepository
         .createQueryBuilder('group')
-        .innerJoin('user_group', 'ug', 'group.groupId = ug.groupId')
+        .innerJoin('group.userGroups', 'ug') // relation join
         .where('ug.userId = :userId', { userId: data.userId })
-        .andWhere('group.workspaceId = :workspaceId', { workspaceId: data.workspaceId })
-        .select(['group.groupId', 'group.name', 'group.description', 'group.type', 'group.createdAt', 'group.createdBy'])
-        .getMany();
+        .andWhere('group.workspaceId = :workspaceId', {
+          workspaceId: data.workspaceId,
+        })
+        .leftJoin('group.userGroups', 'allUsers') // join again to count members
+        .select([
+          'group.groupId',
+          'group.name',
+          'group.description',
+          'group.type',
+          'group.createdAt',
+          'group.createdBy',
+        ])
+        .addSelect('COUNT(allUsers.userId)', 'memberCount')
+        .groupBy('group.groupId')
+        .getRawMany(); // <-- use getRawMany to access memberCount
+
+      // map into clean objects
+      const formatted = groups.map((g) => ({
+        groupId: g.group_groupId,
+        name: g.group_name,
+        description: g.group_description,
+        type: g.group_type,
+        createdAt: g.group_createdAt,
+        createdBy: g.group_createdBy,
+        memberCount: parseInt(g.memberCount, 10),
+      }));
+
       return {
         success: true,
         message: 'User groups in workspace retrieved successfully',
-        data: groups,
+        data: formatted,
       };
     } catch (error) {
       return {
@@ -533,6 +642,10 @@ async getWorkspaceUsers(data: { workspaceId: string }): Promise<any> {
   }
 
 
+
+
+
+  //supporting functions for bulk user addition
   private parseCsv(fileBuffer: Buffer): Promise<any[]> {
     const results: any[] = [];
 

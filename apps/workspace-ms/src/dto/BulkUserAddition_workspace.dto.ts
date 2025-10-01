@@ -1,4 +1,4 @@
-import { IsString, ValidateNested } from 'class-validator';
+import { IsString } from 'class-validator';
 
 
 class FileDataDto {

@@ -107,6 +107,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        profile_picture: user.profile_picture,
       },
     };
   }
@@ -124,6 +125,7 @@ export class AuthService {
           email: user.email,
           role: user.role,
           joinDate: formattedDate,
+          avatar: user.profile_picture,
         };
       });
 
@@ -151,6 +153,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.profile_picture,
       }));
       return { success: true, users: formattedUsers };
     } catch (err) {
