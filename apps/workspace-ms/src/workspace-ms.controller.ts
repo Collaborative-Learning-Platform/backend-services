@@ -150,5 +150,5 @@ export class WorkspaceMsController {
   async getUserGroupsInWorkspace(@Payload() data: {userId: string, workspaceId: string}) {
     console.log('Received get user groups in workspace request at microservice:', data);
     return this.workspaceMsService.getUserGroupsInWorkspace(data);
-  }
+  } 
 }

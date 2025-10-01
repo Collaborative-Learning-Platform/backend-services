@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "hocuspocus": "ts-node apps/document-ms/hocuspocus.server.ts",
     "build:gateway": "nest build gateway",
     "build:user-ms": "nest build user-ms",
     "build:auth-ms": "nest build auth-ms",
@@ -46,6 +47,9 @@
     "docker:logs": "docker-compose logs -f"
   },
   "dependencies": {
+    "@hocuspocus/extension-database": "^3.2.3",
+    "@hocuspocus/extension-redis": "^3.2.3",
+    "@hocuspocus/server": "^3.2.3",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",

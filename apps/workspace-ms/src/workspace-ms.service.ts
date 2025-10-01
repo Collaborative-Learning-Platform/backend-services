@@ -31,9 +31,11 @@ export class WorkspaceMsService {
   //workspace related functions
 
   async createWorkspace(data: any) {
-    console.log(data)
-    try{
-      const existingWorkspace = await this.workspaceRepository.findOne({ where: { name: data.name } });
+    console.log(data);
+    try {
+      const existingWorkspace = await this.workspaceRepository.findOne({
+        where: { name: data.name },
+      });
       if (existingWorkspace) {
         return {
           success: false,
@@ -45,15 +47,14 @@ export class WorkspaceMsService {
         name: data.name,
         description: data.description,
         createdBy: data.createdBy,
-        createdAt: data.createdAt
+        createdAt: data.createdAt,
       });
       const response = await this.workspaceRepository.save(workspace);
       return {
         success: true,
         message: 'Workspace created successfully',
         data: response,
-      }
-
+      };
     } catch (error) {
       return {
         success: false,
@@ -386,7 +387,9 @@ async getWorkspaceUsers(data: { workspaceId: string }): Promise<any> {
 //====================================================================================================================================
 //group related functions
   async createGroup(data: createGroupDto) {
-    const existingGroup = await this.groupRepository.findOne({ where: { name: data.name, workspaceId: data.workspaceId } });
+    const existingGroup = await this.groupRepository.findOne({
+      where: { name: data.name, workspaceId: data.workspaceId },
+    });
     if (existingGroup) {
       return {
         success: false,
@@ -609,7 +612,7 @@ async getWorkspaceUsers(data: { workspaceId: string }): Promise<any> {
   }
 
 
-  async getUserStats(data: {userId: string}) {
+  async getUserStats(data: { userId: string }) {
     try {
       const workspacesCount = await this.userWorkspaceRepository.count({
         where: { userId: data.userId },
