@@ -11,6 +11,7 @@ import { DashboardController } from './dashboard/dashboard.controller';
 import { ChatController } from './chat/chat.controller';
 import { ChatGateway } from './chat/chat.gateway';
 import { QuizController } from './quiz/quiz.controller';
+import { DocumentController } from './documents/documents.controller';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { QuizController } from './quiz/quiz.controller';
     DashboardController,
     QuizController,
     ChatController,
+    DocumentController,
   ],
   providers: [ChatGateway],
 })
