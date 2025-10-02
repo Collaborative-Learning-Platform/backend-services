@@ -7,7 +7,7 @@ dotenv.config({ path: process.cwd() + '/env/.common.env' });
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Resource } from './entity/resource.entity';
 import { ResourceTag } from './entity/resourceTags.entity';
-import { S3Provider } from '../providers/S3Provider';
+import { S3Provider } from './providers/S3Provider';
 
 @Module({
   imports: [
