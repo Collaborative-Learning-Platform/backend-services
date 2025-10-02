@@ -20,7 +20,6 @@ export class Document {
 
   @Column({ type: 'varchar', length: 255, default: 'Untitled Document' })
   title: string;
-  defaultValue: 'Untitled Document';
 
   @Column({ type: 'bytea', nullable: true })
   data: Buffer | null; // Yjs binary/state

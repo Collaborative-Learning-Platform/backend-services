@@ -12,6 +12,7 @@ import { ChatController } from './chat/chat.controller';
 import { ChatGateway } from './chat/chat.gateway';
 import { QuizController } from './quiz/quiz.controller';
 import { StorageController } from './storage/storage.controller';
+import { DocumentController } from './documents/documents.controller';
 
 @Module({
   imports: [
@@ -62,7 +63,7 @@ import { StorageController } from './storage/storage.controller';
         options: {
           host: '127.0.0.1',
           port: 4006,
-        },     
+        },
       },
       {
         name: 'STORAGE_SERVICE',
@@ -71,7 +72,7 @@ import { StorageController } from './storage/storage.controller';
           host: '127.0.0.1',
           port: 4007,
         },
-      }
+      },
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
@@ -86,6 +87,7 @@ import { StorageController } from './storage/storage.controller';
     QuizController,
     ChatController,
     StorageController,
+    DocumentController,
   ],
   providers: [ChatGateway],
 })

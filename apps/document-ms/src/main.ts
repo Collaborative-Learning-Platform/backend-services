@@ -24,5 +24,6 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new AllExceptionsFilter());
   await app.listen();
+  console.log('Document microservice is running');
 }
 bootstrap();

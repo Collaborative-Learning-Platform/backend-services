@@ -1,4 +1,4 @@
-import { Controller, NotFoundException } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { DocumentMsService } from './document-ms.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { DocumentResponseDto } from './dto/document-response.dto';
@@ -9,12 +9,10 @@ import { ServiceResponse } from './interfaces/serviceresponse.interface';
 export class DocumentMsController {
   constructor(private readonly documentMsService: DocumentMsService) {}
 
-  // --- List documents by user ---
+  // --- List documents by user's workspace, group ---
   @MessagePattern({ cmd: 'list_documents_by_user' })
-  async listByUser(
-    @Payload() userId: string,
-  ): Promise<ServiceResponse<DocumentResponseDto[]>> {
-    return this.documentMsService.listByUser(userId);
+  async listByUser(@Payload() userId: string): Promise<ServiceResponse<any>> {
+    return this.documentMsService.listByUserWorkspaceGroup(userId);
   }
 
   // --- Get a document by ID ---

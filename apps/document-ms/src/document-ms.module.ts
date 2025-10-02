@@ -6,9 +6,20 @@ import { DocumentMsService } from './document-ms.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Group } from 'apps/workspace-ms/src/entity/group.entity';
 import { Document } from './entity/document.entity';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
+    ClientsModule.register([
+      {
+        name: 'WORKSPACE_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4003,
+        },
+      },
+    ]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
