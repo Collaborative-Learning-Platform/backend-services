@@ -11,6 +11,7 @@ import { DashboardController } from './dashboard/dashboard.controller';
 import { ChatController } from './chat/chat.controller';
 import { ChatGateway } from './chat/chat.gateway';
 import { QuizController } from './quiz/quiz.controller';
+import { StorageController } from './storage/storage.controller';
 
 @Module({
   imports: [
@@ -61,8 +62,16 @@ import { QuizController } from './quiz/quiz.controller';
         options: {
           host: '127.0.0.1',
           port: 4006,
-        },
+        },     
       },
+      {
+        name: 'STORAGE_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4007,
+        },
+      }
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
@@ -76,6 +85,7 @@ import { QuizController } from './quiz/quiz.controller';
     DashboardController,
     QuizController,
     ChatController,
+    StorageController,
   ],
   providers: [ChatGateway],
 })

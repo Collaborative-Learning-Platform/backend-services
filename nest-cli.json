@@ -71,6 +71,15 @@
         "tsConfigPath": "apps/quiz-ms/tsconfig.app.json"
       }
     },
+    "storage-ms": {
+      "type": "application",
+      "root": "apps/storage-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/storage-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/storage-ms/tsconfig.app.json"
+      }
+    },
     "user-ms": {
       "type": "application",
       "root": "apps/user-ms",
