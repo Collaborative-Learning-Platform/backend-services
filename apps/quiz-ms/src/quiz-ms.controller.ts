@@ -5,6 +5,7 @@ import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { CreateQuizQuestionDto } from './dto/create-quiz-question.dto';
 import { UpdateQuizQuestionDto } from './dto/update-quiz-question.dto';
+import { CreateQuizAttemptDto } from './dto/create-quiz-attempt.dto';
 
 @Controller()
 export class QuizMsController {
@@ -66,8 +67,13 @@ export class QuizMsController {
     );
   }
 
-  // @MessagePattern({ cmd: 'delete_quiz_question' })
-  // deleteQuizQuestion(data: { quizId: string; question_no: number }) {
-  //   return this.quizMsService.deleteQuizQuestion(data.quizId, data.question_no);
-  // }
+  @MessagePattern({ cmd: 'create_quiz_attempt' })
+  createQuizAttempt(@Payload() createQuizAttemptDTO: CreateQuizAttemptDto) {
+    return this.quizMsService.createQuizAttempt(createQuizAttemptDTO);
+  }
+
+  @MessagePattern({ cmd: 'get_quiz_attempts_by_quiz' })
+  getQuizAttemptsByQuiz(@Payload() quizId: string) {
+    return this.quizMsService.getQuizAttemptsByQuiz(quizId);
+  }
 }
