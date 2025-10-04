@@ -1,5 +1,5 @@
 import { Server } from '@hocuspocus/server';
-import { Redis } from '@hocuspocus/extension-redis';
+// import { Redis } from '@hocuspocus/extension-redis';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: process.cwd() + '/env/.common.env' });
 dotenv.config({ path: process.cwd() + '/env/.document-ms.env' });
@@ -37,7 +37,7 @@ export async function setUpDatabase() {
 }
 
 async function bootstrap() {
-  const db = await setUpDatabase();
+  await setUpDatabase();
 
   const server = new Server({
     port: 1234,
@@ -58,7 +58,7 @@ async function bootstrap() {
         },
         store: async ({ documentName, state }) => {
           const repo = AppDataSource.getRepository(Document);
-          let doc = await repo.findOneBy({ name: documentName });
+          const doc = await repo.findOneBy({ name: documentName });
           if (!doc) {
             throw new Error(
               `Cannot store state: document ${documentName} not found`,
@@ -72,7 +72,7 @@ async function bootstrap() {
     ],
   });
 
-  server.listen();
+  await server.listen();
   console.log(`Hocuspocus server running on ws://localhost:1234`);
 }
 

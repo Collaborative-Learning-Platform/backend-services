@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateDocumentDto } from './dto/create-document.dto';
@@ -112,7 +112,7 @@ export class DocumentMsService {
     return {
       success: true,
       message: 'Documents fetched successfully',
-      data: docs.map(this.toResponseDto),
+      data: docs.map((doc) => this.toResponseDto(doc)),
     };
   }
 
