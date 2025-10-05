@@ -76,4 +76,10 @@ export class QuizMsController {
   getQuizAttemptsByQuiz(@Payload() quizId: string) {
     return this.quizMsService.getQuizAttemptsByQuiz(quizId);
   }
+
+  @MessagePattern({ cmd: 'get_user_attempted_quizzes' })
+  getUserAttemptedQuizzes(@Payload() data: { userId: string }) {
+    return this.quizMsService.getUserAttemptedQuizzes(data.userId);
+  }
+  
 }

@@ -31,4 +31,9 @@ export class StorageMsController {
     return this.storageService.deleteResource(data.resourceId);
   }
 
+  //get resource data by an array of group ids
+  @MessagePattern({ cmd: 'get-resources-by-group-ids' })
+  async getResourcesByGroupIds(@Payload() data: { groups: string[] }) {
+    return this.storageService.getResourcesByGroupIds(data.groups);
+  }
 }

@@ -7,4 +7,6 @@ quiz:4004
 chat: 4005
 DOCUMENT : 4006
 storage: 4007
-whiteboard: 4008 (TCP) + 8080 (WebSocket)
+Ai:4008
+whiteboard: 4009 (TCP) + 8080 (WebSocket)
+
