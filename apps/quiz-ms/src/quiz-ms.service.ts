@@ -382,4 +382,34 @@ export class QuizMsService {
       );
     }
   }
+  async getUserAttemptedQuizzes(userId: string) {
+    try {
+      const attempts = await this.quizAttemptRepo.find({
+        where: { userId: userId },
+        relations: ['quiz'],
+      });
+      if (attempts.length === 0) {
+        return {
+          success: true,
+          statusCode: 200,
+          data: [],
+          message: 'No quiz attempts found for the user',
+        };
+      } else {
+        return {
+          success: true,
+          statusCode: 200,
+          data: attempts,
+        };
+      }
+    
+    }catch (error) {
+      return {
+        success: false,
+        statusCode: 400,
+        message: 'Error fetching user attempted quizzes: ' + error.message,
+      };
+    }
+  }
+
 }

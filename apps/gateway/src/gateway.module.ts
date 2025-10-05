@@ -13,6 +13,7 @@ import { ChatGateway } from './chat/chat.gateway';
 import { QuizController } from './quiz/quiz.controller';
 import { StorageController } from './storage/storage.controller';
 import { DocumentController } from './documents/documents.controller';
+import { AiserviceController } from './aiservice/aiservice.controller';
 
 @Module({
   imports: [
@@ -73,6 +74,14 @@ import { DocumentController } from './documents/documents.controller';
           port: 4007,
         },
       },
+      {
+        name: 'AI_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4008,
+        },
+      }
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
@@ -88,6 +97,7 @@ import { DocumentController } from './documents/documents.controller';
     ChatController,
     StorageController,
     DocumentController,
+    AiserviceController,
   ],
   providers: [ChatGateway],
 })
