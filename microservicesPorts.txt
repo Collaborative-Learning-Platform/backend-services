@@ -7,3 +7,4 @@ quiz:4004
 chat: 4005
 DOCUMENT : 4006
 storage: 4007
+Ai:4008

@@ -752,6 +752,49 @@ export class WorkspaceMsService {
     }
   }
 
+  async getGroupsByUser(data: { userId: string }) {
+    try{
+      const userGroups = await this.userGroupRepository.find({
+        where: { userId: data.userId },
+        relations: ['group', 'group.workspace'],
+      });
+      if (!userGroups.length) {
+        return {
+          success: true,
+          message: 'No groups found for user',
+          data: [],
+        };
+      }
+      const groupInfo = userGroups.map((ug) => {
+        const group = ug.group;
+        const workspace = group.workspace;
+        return {
+          groupId: group.groupId,
+          groupName: group.name,
+          groupDescription: group.description,
+          workspaceId: workspace.workspaceId,
+          workspaceName: workspace.name,
+        };
+      });
+      return {
+        success: true,
+        message: 'User groups retrieved successfully',
+        data: groupInfo,
+      };
+    } catch (error) {
+      console.error('Failed to fetch user groups', error);
+      return {
+        success: false,
+        message: 'Failed to retrieve user groups',
+        status: 500,
+      };
+    }
+  }
+
+
+
+
+
   //supporting functions for bulk user addition
   private parseCsv(fileBuffer: Buffer): Promise<any[]> {
     const results: any[] = [];

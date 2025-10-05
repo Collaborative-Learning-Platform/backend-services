@@ -70,4 +70,10 @@ export class QuizMsController {
   // deleteQuizQuestion(data: { quizId: string; question_no: number }) {
   //   return this.quizMsService.deleteQuizQuestion(data.quizId, data.question_no);
   // }
+
+  @MessagePattern({ cmd: 'get_user_attempted_quizzes' })
+  getUserAttemptedQuizzes(@Payload() userId: string) {
+    return this.quizMsService.getUserAttemptedQuizzes(userId);
+  }
+  
 }

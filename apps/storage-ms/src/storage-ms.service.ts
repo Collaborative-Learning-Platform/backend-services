@@ -7,6 +7,7 @@ import { Resource } from './entity/resource.entity';
 import { ResourceTag } from './entity/resourceTags.entity';
 import { v4 as uuid } from 'uuid';
 import { GetUploadUrlDto } from './dto/getUploadUrl.dto';
+import { In } from 'typeorm';
 
 @Injectable()
 export class StorageMsService {
@@ -103,4 +104,43 @@ export class StorageMsService {
     
     return { success: true, message: 'Resource deleted successfully' };
   }
+
+  async getResourcesByGroupIds(groups: string[]) {
+    try{
+      
+      if (!groups || !Array.isArray(groups) || groups.length === 0) {
+        return {
+          success: true,
+          data: [],
+          message: 'No groups provided or empty groups array',
+        };
+      }
+
+      const resources = await this.resourceRepo.find({
+        where: { groupId: In(groups) },
+        relations: ['tags'],
+      });
+
+      const filteredResources = resources.map(r => {
+        return {
+          resourceId: r.resourceId,
+          groupId: r.groupId,
+          fileName: r.fileName,
+          contentType: r.contentType,
+          description: r.description,
+          estimatedCompletionTime: r.estimatedCompletionTime,
+          tags: r.tags
+        };
+      });
+      return {
+        success: true,
+        data: filteredResources,
+        message: 'Resources fetched successfully',
+      };
+    }catch (error) {
+      console.error('Error fetching resources by group IDs:', error);
+      return { success: false, message: 'Error fetching resources by group IDs' };
+    }
+  }
+
 }

@@ -10,6 +10,15 @@
   "monorepo": true,
   "root": "apps/backend-services",
   "projects": {
+    "ai-ms": {
+      "type": "application",
+      "root": "apps/ai-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/ai-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/ai-ms/tsconfig.app.json"
+      }
+    },
     "auth-ms": {
       "type": "application",
       "root": "apps/auth-ms",

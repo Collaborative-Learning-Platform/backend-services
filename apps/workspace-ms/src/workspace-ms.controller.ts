@@ -165,4 +165,11 @@ export class WorkspaceMsController {
   async getUserWorkspacesWithGroups(@Payload() data: { userId: string }) {
     return this.workspaceMsService.getUserWorkspacesWithGroups(data);
   }
+
+  //get all groups a user has joined
+  @MessagePattern({ cmd: 'get_groups_by_user' })
+  async getGroupsByUser(@Payload() data: { userId: string }) {
+    console.log('Received get groups by user request at microservice:', data);
+    return this.workspaceMsService.getGroupsByUser(data);
+  }
 }
