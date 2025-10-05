@@ -10,12 +10,12 @@ async function bootstrap() {
       transport: Transport.TCP,
       options: {
         host: '0.0.0.0',
-        port: 4008,
+        port: 4009,
       },
     },
   );
   await app.listen();
-  console.log('Whiteboard microservice (TCP) listening on 4008');
+  console.log('Whiteboard microservice (TCP) listening on 4009');
 
   bootstrapSyncServer(8080);
 }
