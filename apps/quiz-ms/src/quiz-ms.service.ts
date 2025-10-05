@@ -388,7 +388,6 @@ export class QuizMsService {
         where: { userId: userId },
         relations: ['quiz'],
       });
-
       if (attempts.length === 0) {
         return {
           success: true,

@@ -8,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { GeminiProvider } from './providers/gemini.provider';
 import { ClientsModule } from '@nestjs/microservices';
 import { Transport } from '@nestjs/microservices';
+import { StudyPlan } from './entity/study_plan.entity';
 
 @Module({
   imports: [
@@ -44,14 +45,14 @@ import { Transport } from '@nestjs/microservices';
             username: process.env.DB_USERNAME,
             password: process.env.DB_PASSWORD,
             database: process.env.DB_NAME,
-            entities: [],
+            entities: [StudyPlan],
             synchronize: true,
             ssl: {
               rejectUnauthorized: false,
             },
       }),
       TypeOrmModule.forFeature([
-           
+           StudyPlan
       ]),
   ],
   controllers: [AiMsController],
