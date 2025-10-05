@@ -89,6 +89,15 @@
         "tsConfigPath": "apps/user-ms/tsconfig.app.json"
       }
     },
+    "whiteboard-ms": {
+      "type": "application",
+      "root": "apps/whiteboard-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/whiteboard-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/whiteboard-ms/tsconfig.app.json"
+      }
+    },
     "workspace-ms": {
       "type": "application",
       "root": "apps/workspace-ms",
