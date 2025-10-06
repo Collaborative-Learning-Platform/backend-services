@@ -55,4 +55,12 @@ export class DocumentMsController {
   ): Promise<ServiceResponse<DocumentResponseDto>> {
     return this.documentMsService.getByRoomName(roomName);
   }
+
+  // --- Delete documents by group ---
+  @MessagePattern({ cmd: 'delete_group_documents' })
+  async deleteByGroup(
+    @Payload() groupId: string,
+  ): Promise<ServiceResponse<any>> {
+    return this.documentMsService.deleteByGroup(groupId);
+  }
 }

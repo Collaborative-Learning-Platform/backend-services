@@ -20,4 +20,9 @@ export class ChatMsController {
   getMessages(@Payload() roomId: string) {
     return this.chatMsService.getMessages(roomId);
   }
+
+  @MessagePattern({cmd:'delete_group_chat'})
+  deleteGroupChat(@Payload() groupId: string) {
+    return this.chatMsService.deleteGroupChat(groupId);
+  }
 }
