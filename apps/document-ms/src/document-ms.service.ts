@@ -203,4 +203,28 @@ export class DocumentMsService {
       data: this.toResponseDto(updated),
     };
   }
+
+
+  async deleteByGroup(groupId: string): Promise<ServiceResponse<any>> {
+    try {
+      const docs = await this.docRepo.findBy({ groupId });
+      if (docs.length === 0) {
+        return {
+          success: true,
+          message: 'No documents to delete for this group',
+        };
+      }
+      await this.docRepo.remove(docs);
+      return {
+        success: true,
+        message: 'Documents deleted successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Error deleting documents: ' + error.message,
+        status: 500,
+      };
+    }
+  }
 }

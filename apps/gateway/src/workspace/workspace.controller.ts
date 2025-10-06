@@ -10,6 +10,7 @@ import {
   Req,
   UseInterceptors,
   UploadedFile,
+  Delete,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
@@ -477,5 +478,30 @@ export class WorkspaceController {
         message: 'Internal server error',
       });
     }
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('groups/:groupId/delete')
+  async deleteGroup(@Param('groupId') groupId: string, @Res() res: Response) {
+    console.log('Received delete group request at gateway:', groupId);
+    const response = await lastValueFrom(
+      this.WorkspaceClient.send({ cmd: 'delete_group' }, { groupId }),
+    );
+    if (response?.error) {
+      const ret = handleValidationError(response.error);
+      return res.json(ret);
+    }
+    if (!response?.success) {
+      return res.json({
+        success: false,
+        message: response.message || 'Failed to delete group',
+        status: response.status || 400,
+      });
+    }
+    return res.json({
+      success: true,
+      message: 'Group deleted successfully',
+      data: response.data,
+    });
   }
 }

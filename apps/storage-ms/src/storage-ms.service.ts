@@ -143,4 +143,28 @@ export class StorageMsService {
     }
   }
 
+  async deleteResourcesByGroupId(groupId: string) {
+    try{
+      const resources = await this.resourceRepo.find({ where: { groupId } });
+      if (resources.length === 0) {
+        return { success: true, message: 'No resources to delete for this group' };
+      }
+
+      const deletePromises = resources.map(resource => {
+        return this.s3.send(new DeleteObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Key: resource.s3Key,
+        }));
+      });
+
+      await Promise.all(deletePromises);
+      await this.resourceRepo.remove(resources);
+
+      return { success: true, message: 'Resources deleted successfully' };
+    }catch (error) {
+      console.error('Error deleting resources by group ID:', error);
+      return { success: false, message: 'Error deleting resources by group ID' };
+    }
+  }
+
 }
