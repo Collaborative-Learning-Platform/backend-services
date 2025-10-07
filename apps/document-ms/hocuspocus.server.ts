@@ -70,6 +70,46 @@ async function bootstrap() {
         },
       }),
     ],
+
+    // /**
+    //  * Hook: when awareness is updated
+    //  */
+    // onAwarenessUpdate: async ({ added, updated, states, documentName }) => {
+    //   // if (added.length === 0 && updated.length === 0) return;
+
+    //   const repo = AppDataSource.getRepository(Document);
+    //   const doc = await repo.findOneBy({ name: documentName });
+    //   if (!doc) return;
+
+    //   // Collect all user_ids from awareness states
+    //   console.log('Awareness states:', states);
+    //   const userIds = states
+    //     .map((s) => {
+    //       // console.log('State:', s); // Log each state for debugging
+    //       return s?.user?.user_id;
+    //     })
+
+    //     .filter((id) => {
+    //       // console.log('Filtering ID:', id); // Log each ID before filtering
+    //       return typeof id === 'string' && id.trim() !== '';
+    //     });
+
+    //   // console.log('Filtered user IDs:', userIds);
+
+    //   // Merge new ones into contributorIds
+    //   const newContributors = [
+    //     ...new Set([...(doc.contributorIds || []), ...userIds]),
+    //   ];
+
+    //   doc.contributorIds = newContributors;
+    //   doc.lastEdited = new Date();
+
+    //   await repo.save(doc);
+    //   console.log(
+    //     `[AwarenessUpdate] Updated contributors for ${documentName}:`,
+    //     newContributors,
+    //   );
+    // },
   });
 
   await server.listen();

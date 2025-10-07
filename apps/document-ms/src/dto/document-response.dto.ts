@@ -5,3 +5,7 @@ export class DocumentResponseDto {
   groupId: string;
   createdBy: string;
 }
+
+export class ContributorResponseDto extends DocumentResponseDto {
+  contributorIds: string[];
+}

@@ -1,7 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { DocumentMsService } from './document-ms.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
-import { DocumentResponseDto } from './dto/document-response.dto';
+import {
+  DocumentResponseDto,
+  ContributorResponseDto,
+} from './dto/document-response.dto';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ServiceResponse } from './interfaces/serviceresponse.interface';
 
@@ -54,5 +57,14 @@ export class DocumentMsController {
     @Payload() roomName: string,
   ): Promise<ServiceResponse<DocumentResponseDto>> {
     return this.documentMsService.getByRoomName(roomName);
+  }
+
+  // --- Update contributors ---
+  @MessagePattern({ cmd: 'update_document_contributors' })
+  async updateContributors(
+    @Payload() payload: { id: string; contributorIds: string[] },
+  ): Promise<ServiceResponse<ContributorResponseDto>> {
+    const { id, contributorIds } = payload;
+    return this.documentMsService.updateContributors(id, contributorIds);
   }
 }
