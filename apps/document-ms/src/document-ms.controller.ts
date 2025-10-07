@@ -67,4 +67,11 @@ export class DocumentMsController {
     const { id, contributorIds } = payload;
     return this.documentMsService.updateContributors(id, contributorIds);
   }
+  // --- Delete documents by group ---
+  @MessagePattern({ cmd: 'delete_group_documents' })
+  async deleteByGroup(
+    @Payload() groupId: string,
+  ): Promise<ServiceResponse<any>> {
+    return this.documentMsService.deleteByGroup(groupId);
+  }
 }

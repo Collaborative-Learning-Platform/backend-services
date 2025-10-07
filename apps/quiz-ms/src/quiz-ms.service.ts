@@ -388,6 +388,7 @@ export class QuizMsService {
         where: { userId: userId },
         relations: ['quiz'],
       });
+
       if (attempts.length === 0) {
         return {
           success: true,
@@ -408,6 +409,31 @@ export class QuizMsService {
         success: false,
         statusCode: 400,
         message: 'Error fetching user attempted quizzes: ' + error.message,
+      };
+    }
+  }
+
+  async deleteGroupQuizzes(groupId: string) {
+    try{
+      const quizzes = await this.quizRepo.find({where: {groupId}});
+      if(quizzes.length === 0){
+        return {
+          success: true,
+          statusCode: 200,
+          message: 'No quizzes found for the group',
+        }
+      }
+      await this.quizRepo.remove(quizzes);
+      return {
+        success: true,
+        statusCode: 200,
+        message: 'Quizzes deleted successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        statusCode: 400,
+        message: 'Error deleting group quizzes: ' + error.message,
       };
     }
   }

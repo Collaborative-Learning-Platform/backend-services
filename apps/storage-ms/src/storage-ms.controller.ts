@@ -36,4 +36,10 @@ export class StorageMsController {
   async getResourcesByGroupIds(@Payload() data: { groups: string[] }) {
     return this.storageService.getResourcesByGroupIds(data.groups);
   }
+
+  //delete all resources inside a group
+  @MessagePattern({ cmd: 'clear_group_storage'})
+  async deleteResourcesByGroupId(@Payload() data: { groupId: string }) {
+    return this.storageService.deleteResourcesByGroupId(data.groupId);
+  }
 }

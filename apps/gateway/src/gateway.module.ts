@@ -13,6 +13,8 @@ import { ChatGateway } from './chat/chat.gateway';
 import { QuizController } from './quiz/quiz.controller';
 import { StorageController } from './storage/storage.controller';
 import { DocumentController } from './documents/documents.controller';
+import { WhiteboardController } from './whiteboard/whiteboard.controller';
+import { WhiteboardGateway } from './whiteboard/whiteboard.gateway';
 import { AiserviceController } from './aiservice/aiservice.controller';
 
 @Module({
@@ -75,13 +77,22 @@ import { AiserviceController } from './aiservice/aiservice.controller';
         },
       },
       {
+       
         name: 'AI_SERVICE',
         transport: Transport.TCP,
         options: {
           host: '127.0.0.1',
           port: 4008,
         },
-      }
+      },
+      {
+        name: 'WHITEBOARD_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4009,
+        },
+      },
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
@@ -97,8 +108,9 @@ import { AiserviceController } from './aiservice/aiservice.controller';
     ChatController,
     StorageController,
     DocumentController,
+    WhiteboardController,
     AiserviceController,
   ],
-  providers: [ChatGateway],
+  providers: [ChatGateway, WhiteboardGateway],
 })
 export class GatewayModule {}

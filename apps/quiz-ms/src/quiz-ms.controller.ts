@@ -81,5 +81,10 @@ export class QuizMsController {
   getUserAttemptedQuizzes(@Payload() data: { userId: string }) {
     return this.quizMsService.getUserAttemptedQuizzes(data.userId);
   }
-  
+
+  @MessagePattern({"cmd": "delete_group_quizzes"})
+  deleteGroupQuizzes(@Payload() data: { groupId: string }) {
+    return this.quizMsService.deleteGroupQuizzes(data.groupId);
+  }
+
 }
