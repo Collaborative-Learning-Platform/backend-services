@@ -56,4 +56,16 @@ export class ChatGateway {
 
     client.emit('messages', messages);
   }
+
+  @SubscribeMessage('typing')
+  handleTyping(
+    @MessageBody() data: { roomId: string; sender: string; isTyping: boolean },
+    @ConnectedSocket() client: Socket,
+  ) {
+    // Broadcast typing status to all other users in the room (excluding the sender)
+    client.to(data.roomId).emit('user_typing', {
+      sender: data.sender,
+      isTyping: data.isTyping,
+    });
+  }
 }
