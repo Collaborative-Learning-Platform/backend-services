@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ClientProxy } from '@nestjs/microservices';
 import { welcomeTemplate } from './templates/welcomeMail';
 import { resetPasswordTemplate } from './templates/resetPasswordMail';
-import { stat } from 'fs';
+
 
 @Injectable()
 export class AuthService {
@@ -108,7 +108,6 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
-        profile_picture: user.profile_picture,
       },
     };
   }
@@ -126,7 +125,6 @@ export class AuthService {
           email: user.email,
           role: user.role,
           joinDate: formattedDate,
-          avatar: user.profile_picture,
         };
       });
 
@@ -154,7 +152,6 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
-        avatar: user.profile_picture,
       }));
       return { success: true, users: formattedUsers };
     } catch (err) {
@@ -165,6 +162,49 @@ export class AuthService {
       };
     }
   }
+
+  async storeProfilePicUrl(userId: string, profilePicUrl: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      return {
+        success: false,
+        message: `User with ID ${userId} not found`,
+        status: 400,
+      };
+    }
+
+    user.profile_picture = profilePicUrl;
+
+    await this.userRepository.save(user);
+
+    return {
+      success: true,
+      message: 'Profile picture updated successfully',
+    };
+  }
+
+  async getProfilePictureUrl(userId: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      return {
+        success: false,
+        message: `User with ID ${userId} not found`,
+        status: 400,
+      };
+    }
+
+    const profilePictureUrl = user.profile_picture;
+    return {
+      success: true,
+      profilePictureUrl,
+    };
+  }
+
+
+
+
+
 
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email: email } });
@@ -177,7 +217,6 @@ export class AuthService {
     }
 
     // Send password reset email
-    // ...
     const { subject, html } = resetPasswordTemplate(
       user.name,
       user.email,
@@ -203,56 +242,8 @@ export class AuthService {
     };
   }
 
-  async generateToken(userId: string) {
-    const access_token = this.jwtService.sign({ userId: userId });
 
-    const refresh_token = uuidv4();
-
-    await this.storeRefreshToken(userId, refresh_token);
-
-    return { access_token, refresh_token };
-  }
-
-  async storeRefreshToken(userId: string, refresh_token: string) {
-    const existingRefreshToken = await this.refreshTokenRepository.findOne({
-      where: { userId: userId },
-    });
-
-    console.log("existingRefreshToken:", existingRefreshToken);
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    if (existingRefreshToken) {
-      existingRefreshToken.refresh_token = refresh_token;
-      existingRefreshToken.expiresAt = expiresAt;
-      await this.refreshTokenRepository.save(existingRefreshToken);
-    } else {
-      await this.refreshTokenRepository.save({
-        userId: userId,
-        refresh_token: refresh_token,
-        expiresAt: expiresAt,
-      });
-    }
-  }
-
-  async refreshToken(token: string) {
-    const refreshToken = await this.refreshTokenRepository.findOne({
-      where: { refresh_token: token, expiresAt: MoreThan(new Date()) },
-    });
-
-    
-    if (!refreshToken) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    return this.generateToken(refreshToken.userId);
-  }
-
-
-  async processFileAndCreateUsers(fileData: {
-    originalname: string;
-    buffer: Buffer;
-  }) {
+  async processFileAndCreateUsers(fileData: {originalname: string;buffer: Buffer;}) {
     let users: any[] = [];
 
     // Parse file
@@ -310,6 +301,58 @@ export class AuthService {
       count: preparedUsers.length,
     };
   }
+
+
+
+  //supportive functions for token generation and storage
+
+  async generateToken(userId: string) {
+    const access_token = this.jwtService.sign({ userId: userId });
+
+    const refresh_token = uuidv4();
+
+    await this.storeRefreshToken(userId, refresh_token);
+
+    return { access_token, refresh_token };
+  }
+
+  async storeRefreshToken(userId: string, refresh_token: string) {
+    const existingRefreshToken = await this.refreshTokenRepository.findOne({
+      where: { userId: userId },
+    });
+
+    console.log("existingRefreshToken:", existingRefreshToken);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    if (existingRefreshToken) {
+      existingRefreshToken.refresh_token = refresh_token;
+      existingRefreshToken.expiresAt = expiresAt;
+      await this.refreshTokenRepository.save(existingRefreshToken);
+    } else {
+      await this.refreshTokenRepository.save({
+        userId: userId,
+        refresh_token: refresh_token,
+        expiresAt: expiresAt,
+      });
+    }
+  }
+
+  async refreshToken(token: string) {
+    const refreshToken = await this.refreshTokenRepository.findOne({
+      where: { refresh_token: token, expiresAt: MoreThan(new Date()) },
+    });
+
+    
+    if (!refreshToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    return this.generateToken(refreshToken.userId);
+  }
+
+
+  //supportive functions for bulk user addition
 
   private parseCsv(fileBuffer: Buffer): Promise<any[]> {
     const results: any[] = [];

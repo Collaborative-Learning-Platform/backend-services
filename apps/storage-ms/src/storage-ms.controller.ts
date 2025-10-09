@@ -19,6 +19,17 @@ export class StorageMsController {
     return this.storageService.generateDownloadUrl(data.resourceId);
   }
 
+  @MessagePattern({cmd:'generate-profile-pic-upload-url'})
+  async getProfilePicUploadUrl(@Payload() data: { userId: string, fileName: string, contentType: string }) {
+    return this.storageService.generateProfilePicUploadUrl(data.userId, data.fileName, data.contentType);
+  }
+
+
+  @MessagePattern({cmd:'generate-profile-pic-download-url'})
+  async getProfilePicDownloadUrl(@Payload() data: { userId: string }) {
+    return this.storageService.generateProfilePicDownloadUrl(data.userId);
+  }
+
   //  list resources by group
   @MessagePattern({ cmd: 'list-group-resources' })
   async listGroupResources(@Payload() data: { groupId: string }) {

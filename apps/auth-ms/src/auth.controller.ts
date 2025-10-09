@@ -10,6 +10,7 @@ import { FirstTimeLoginPasswordChangeDTO } from './dto/FirstTimeLoginPasswordCha
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+
   @MessagePattern({ cmd: 'auth_login' })
   async login(@Payload() data: LoginDto) {
     
@@ -39,6 +40,10 @@ export class AuthController {
     return this.authService.getUser(data.userId);
   }
 
+  @MessagePattern({cmd:'auth_store_profile_pic_url'})
+  async storeProfilePicUrl(@Payload() data: { userId: string; profilePicUrl: string }) {
+    return this.authService.storeProfilePicUrl(data.userId, data.profilePicUrl);
+  }
 
   @MessagePattern({ cmd:'auth_get_users' })
   async getUsers() {
@@ -71,4 +76,8 @@ export class AuthController {
     });
   }
 
+  @MessagePattern({ cmd: 'get_profile_picture_url' })
+  async getProfilePictureUrl(@Payload() data: { userId: string }) {
+    return this.authService.getProfilePictureUrl(data.userId);
+  }
 }

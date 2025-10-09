@@ -34,6 +34,20 @@ export class StorageController {
         return this.storageClient.send({ cmd: 'generate-download-url' }, data);
     }
 
+    // Generate profile pic upload URL
+    @Post('generate-profile-pic-upload-url')
+    @UseGuards(AuthGuard)
+    async generateProfilePicUploadUrl(@Body() data: { userId: string, fileName: string, contentType: string }) {
+        return this.storageClient.send({ cmd: 'generate-profile-pic-upload-url' }, data);
+    }
+
+    @Post('generate-profile-pic-download-url')
+    @UseGuards(AuthGuard)
+    async generateProfilePicDownloadUrl(@Body() data: { userId: string }) {
+        return this.storageClient.send({ cmd: 'generate-profile-pic-download-url' }, data);
+    }
+
+
     // List resources by group
     @Get('list-group-resources/:groupId')
     @UseGuards(AuthGuard)
@@ -47,5 +61,7 @@ export class StorageController {
     async deleteResource(@Param('resourceId') resourceId: string) {
         return this.storageClient.send({ cmd: 'delete-resource' }, { resourceId });
     }
+
+
 }
 

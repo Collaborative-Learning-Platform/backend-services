@@ -8,9 +8,20 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Resource } from './entity/resource.entity';
 import { ResourceTag } from './entity/resourceTags.entity';
 import { S3Provider } from './providers/S3Provider';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
+    ClientsModule.register([
+      {
+        name: 'AUTH_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4000,
+        },
+      },
+    ]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
