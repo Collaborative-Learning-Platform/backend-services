@@ -26,7 +26,7 @@ export class User {
   @CreateDateColumn({ type: "timestamp with time zone" }) 
   created_at: Date;
 
-  @Column()
+  @Column({ nullable: true })
   profile_picture: string;
 
   @Column({ default: true })

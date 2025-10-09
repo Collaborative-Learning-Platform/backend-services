@@ -245,6 +245,12 @@ export class AuthService {
 
   async processFileAndCreateUsers(fileData: {originalname: string;buffer: Buffer;}) {
     let users: any[] = [];
+    const failedUsers: any[] = [];
+    const existingUsers: any[] = [];
+    const successfulUsers: any[] = [];
+    let failedCount: number = 0;
+    let successCount: number = 0;
+    let existingCount: number = 0;
 
     // Parse file
     if (fileData.originalname.endsWith('.csv')) {
@@ -255,7 +261,7 @@ export class AuthService {
       throw new Error('Unsupported file format');
     }
 
-    console.log(users);
+    
 
     // Prepare users (hash passwords)
     const preparedUsers = await Promise.all(
@@ -266,40 +272,88 @@ export class AuthService {
       })),
     );
 
-    let savedUsers: any[];
+    
 
-    // Save to DB with error handling
-    try {
-      savedUsers = await this.userRepository.save(preparedUsers);
-      console.log('Saved Users:', savedUsers);
-    } catch (error) {
-      console.error(' Error saving users:', error);
-      return {
-        success: false,
-        message: 'Failed to save users',
-        error: error.message,
-      };
-    }
 
-    try {
-      savedUsers.forEach((u) => {
-        const { subject, html } = welcomeTemplate(u.name, u.email, 'Abcd1234');
-        this.notificationClient.emit('notify', {
-          email: u.email,
-          subject,
-          html,
-        });
+    for (const user of preparedUsers) {
+      const existingUser = await this.userRepository.findOne({
+        where: { email: user.email },
       });
-    } catch (err) {
-      console.log(err);
+      if (existingUser) {
+        failedUsers.push({
+          email: user.email,
+          reason: 'User already exists',
+        });
+        existingUsers.push(user.email);
+        existingCount++;
+        continue
+      }
+      else {
+        try{
+          const createdUser = await this.userRepository.create(user);
+          await this.userRepository.save(createdUser);
+          successCount++;
+          successfulUsers.push(user.email);
+          const welcomeMail = welcomeTemplate(user.name, user.email, 'Abcd1234');
+          this.notificationClient.emit('notify', {
+            email: user.email,
+            subject: welcomeMail.subject,
+            html: welcomeMail.html,
+          });
+        }
+        catch(err){
+          failedUsers.push({
+            email: user.email,
+            reason: 'Failed to create user: ' + err.message,
+          });
+          failedCount++;
+          continue;
+        }
+      }
     }
-
-    // Always return success if users were created
     return {
       success: true,
-      message: 'Bulk registration successful. Emails have been sent.',
-      count: preparedUsers.length,
+      message: 'Bulk registration process completed',
+      successCount: successCount,
+      failedCount: failedCount,
+      failedUsers: failedUsers,
+      existingCount: existingCount,
+      existingUsers: existingUsers,
+      successfulUsers: successfulUsers,
     };
+
+    // // Save to DB with error handling
+    // try {
+    //   savedUsers = await this.userRepository.save(preparedUsers);
+    //   console.log('Saved Users:', savedUsers);
+    // } catch (error) {
+    //   console.error(' Error saving users:', error);
+    //   return {
+    //     success: false,
+    //     message: 'Failed to save users',
+    //     error: error.message,
+    //   };
+    // }
+
+    // try {
+    //   savedUsers.forEach((u) => {
+    //     const { subject, html } = welcomeTemplate(u.name, u.email, 'Abcd1234');
+    //     this.notificationClient.emit('notify', {
+    //       email: u.email,
+    //       subject,
+    //       html,
+    //     });
+    //   });
+    // } catch (err) {
+    //   console.log(err);
+    // }
+
+    // // Always return success if users were created
+    // return {
+    //   success: true,
+    //   message: 'Bulk registration successful. Emails have been sent.',
+    //   count: preparedUsers.length,
+    // };
   }
 
 
