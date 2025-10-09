@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ClientProxy } from '@nestjs/microservices';
 import { welcomeTemplate } from './templates/welcomeMail';
 import { resetPasswordTemplate } from './templates/resetPasswordMail';
-
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +23,8 @@ export class AuthService {
     private refreshTokenRepository: Repository<RefreshToken>,
     @Inject('NOTIFICATION_SERVICE')
     private readonly notificationClient: ClientProxy,
+    @Inject('ANALYTICS_SERVICE')
+    private readonly analyticsClient: ClientProxy,
 
     private jwtService: JwtService,
   ) {}
@@ -57,6 +59,25 @@ export class AuthService {
     }
 
     const tokens = await this.generateToken(user.id);
+
+    // Log user login via analytics-ms service
+    try {
+      const analyticsResponse = await lastValueFrom(
+        this.analyticsClient.send(
+          { cmd: 'log_user_activity' },
+          {
+            user_id: user.id,
+            role: user.role,
+            category: 'GENERAL',
+            activity_type: 'LOGIN',
+          },
+        ),
+      );
+
+      console.log('Analytics response:', analyticsResponse);
+    } catch (error) {
+      console.error('Failed to log user activity:', error);
+    }
 
     return {
       success: true,
@@ -201,11 +222,6 @@ export class AuthService {
     };
   }
 
-
-
-
-
-
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email: email } });
     if (!user) {
@@ -242,8 +258,10 @@ export class AuthService {
     };
   }
 
-
-  async processFileAndCreateUsers(fileData: {originalname: string;buffer: Buffer;}) {
+  async processFileAndCreateUsers(fileData: {
+    originalname: string;
+    buffer: Buffer;
+  }) {
     let users: any[] = [];
     const failedUsers: any[] = [];
     const existingUsers: any[] = [];
@@ -261,8 +279,6 @@ export class AuthService {
       throw new Error('Unsupported file format');
     }
 
-    
-
     // Prepare users (hash passwords)
     const preparedUsers = await Promise.all(
       users.map(async (u) => ({
@@ -271,9 +287,6 @@ export class AuthService {
         password: undefined,
       })),
     );
-
-    
-
 
     for (const user of preparedUsers) {
       const existingUser = await this.userRepository.findOne({
@@ -286,22 +299,24 @@ export class AuthService {
         });
         existingUsers.push(user.email);
         existingCount++;
-        continue
-      }
-      else {
-        try{
+        continue;
+      } else {
+        try {
           const createdUser = await this.userRepository.create(user);
           await this.userRepository.save(createdUser);
           successCount++;
           successfulUsers.push(user.email);
-          const welcomeMail = welcomeTemplate(user.name, user.email, 'Abcd1234');
+          const welcomeMail = welcomeTemplate(
+            user.name,
+            user.email,
+            'Abcd1234',
+          );
           this.notificationClient.emit('notify', {
             email: user.email,
             subject: welcomeMail.subject,
             html: welcomeMail.html,
           });
-        }
-        catch(err){
+        } catch (err) {
           failedUsers.push({
             email: user.email,
             reason: 'Failed to create user: ' + err.message,
@@ -356,8 +371,6 @@ export class AuthService {
     // };
   }
 
-
-
   //supportive functions for token generation and storage
 
   async generateToken(userId: string) {
@@ -375,7 +388,7 @@ export class AuthService {
       where: { userId: userId },
     });
 
-    console.log("existingRefreshToken:", existingRefreshToken);
+    console.log('existingRefreshToken:', existingRefreshToken);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
@@ -397,14 +410,12 @@ export class AuthService {
       where: { refresh_token: token, expiresAt: MoreThan(new Date()) },
     });
 
-    
     if (!refreshToken) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     return this.generateToken(refreshToken.userId);
   }
-
 
   //supportive functions for bulk user addition
 

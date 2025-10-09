@@ -8,6 +8,7 @@ import {
 import { UserActivitySession } from './user-activity-session.entity';
 
 export enum ActivityCategory {
+  GENERAL = 'GENERAL', //Login, Logout
   AI_LEARNING = 'AI_LEARNING', //Flashcard, Study Plan
   COLLABORATION = 'COLLABORATION', // Whiteboard, DocumentEditor
   COMMUNICATION = 'COMMUNICATION', //Chat, Announcements(?)
@@ -18,6 +19,7 @@ export enum ActivityCategory {
 export enum ActivityType {
   // Common
   LOGIN = 'LOGIN',
+  LOGOUT = 'LOGOUT',
   DOWNLOADED_RESOURCE = 'DOWNLOADED_RESOURCE',
   UPLOADED_RESOURCE = 'UPLOADED_RESOURCE',
   GENERATED_FLASHCARD = 'GENERATED_FLASHCARD',
@@ -47,12 +49,13 @@ export enum ActivityType {
   // Admin-side
   DELETED_GROUP = 'DELETED_GROUP',
   CREATED_WORKSPACE = 'CREATED_WORKSPACE',
-  DELETED_WORKSPACE = 'DELETED_WORSPCAE',
+  DELETED_WORKSPACE = 'DELETED_WORKSPACE',
 }
 
 export const ActivityMessageMap: Record<ActivityType, string> = {
   // Common
   [ActivityType.LOGIN]: 'logged in',
+  [ActivityType.LOGOUT]: 'logged out',
   [ActivityType.DOWNLOADED_RESOURCE]: 'downloaded  resource',
   [ActivityType.UPLOADED_RESOURCE]: 'uploaded  resource',
   [ActivityType.GENERATED_FLASHCARD]: 'generated flashcards',
@@ -88,6 +91,7 @@ export const ActivityMessageMap: Record<ActivityType, string> = {
 export const RoleActivityMap = {
   student: [
     ActivityType.LOGIN,
+    ActivityType.LOGOUT,
     ActivityType.DOWNLOADED_RESOURCE,
     ActivityType.UPLOADED_RESOURCE,
     ActivityType.GENERATED_FLASHCARD,
@@ -100,6 +104,7 @@ export const RoleActivityMap = {
     ActivityType.JOINED_STUDY_GROUP,
     ActivityType.SUBMITTED_ASSIGNMENT,
     ActivityType.GENERATED_STUDY_PLAN,
+    ActivityType.VIEWED_STUDY_PLAN,
     ActivityType.POSTED_MESSAGE,
     ActivityType.VIEWED_FLASHCARDS,
     ActivityType.VIEWED_RESOURCE,
@@ -107,6 +112,7 @@ export const RoleActivityMap = {
   ],
   tutor: [
     ActivityType.LOGIN,
+    ActivityType.LOGOUT,
     ActivityType.UPLOADED_RESOURCE,
     ActivityType.DOWNLOADED_RESOURCE,
     ActivityType.GENERATED_FLASHCARD,
@@ -125,9 +131,11 @@ export const RoleActivityMap = {
   ],
   admin: [
     ActivityType.LOGIN,
+    ActivityType.LOGOUT,
     ActivityType.CREATED_WORKSPACE,
     ActivityType.DELETED_GROUP,
     ActivityType.DELETED_WORKSPACE,
+    ActivityType.CREATED_GROUP,
   ],
 } as const;
 

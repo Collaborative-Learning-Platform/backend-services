@@ -8,6 +8,7 @@ import { UserActivityLog } from './entity/user-activity-log.entity';
 import { UserActivitySession } from './entity/user-activity-session.entity';
 import { DailyActiveUsers } from './entity/daily-active-users.entity';
 import { DocumentActivitySession } from './entity/document-activity-session.entity';
+import { UserStreak } from './entity/user-streak.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -24,6 +25,7 @@ import { ScheduleModule } from '@nestjs/schedule';
         UserActivitySession,
         DailyActiveUsers,
         DocumentActivitySession,
+        UserStreak,
       ],
       synchronize: true,
       ssl: {
@@ -35,6 +37,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       UserActivitySession,
       DailyActiveUsers,
       DocumentActivitySession,
+      UserStreak,
     ]),
     ScheduleModule.forRoot(),
   ],

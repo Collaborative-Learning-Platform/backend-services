@@ -65,7 +65,7 @@ export class AnalyticsMsService {
 
       const saved = await this.userActivityRepo.save(log);
 
-      if (role === 'STUDENT' || role === 'TUTOR') {
+      if (role.toUpperCase() === 'USER' || role.toUpperCase() === 'TUTOR') {
         // Check last_active_date first
         const streak = await this.userStreakRepo.findOne({
           where: { user_id },
@@ -238,63 +238,48 @@ export class AnalyticsMsService {
   // BASE FUNCTION – works for both cron & live requests
   // =============================================
 
-  async calculateAndStoreDailyActiveUsers(dateRange?: {
+  private async calculateAndStoreDailyActiveUsers(dateRange?: {
     start: Date;
     end: Date;
     label?: string;
   }) {
-    try {
-      const { start, end, label } = dateRange || {
-        // Default: previous day (for cron)
-        start: startOfDay(subDays(new Date(), 1)),
-        end: endOfDay(subDays(new Date(), 1)),
-        label: 'yesterday',
-      };
+    const { start, end, label } = dateRange || {
+      // Default: previous day (for cron)
+      start: startOfDay(subDays(new Date(), 1)),
+      end: endOfDay(subDays(new Date(), 1)),
+      label: 'yesterday',
+    };
 
-      // Get unique user_ids who logged any activity in that date range
-      const logs = await this.userActivityRepo
-        .createQueryBuilder('log')
-        .select('DISTINCT log.user_id', 'user_id')
-        .where('log.created_at BETWEEN :start AND :end', { start, end })
-        .getRawMany();
+    // Get unique user_ids who logged any activity in that date range
+    const logs = await this.userActivityRepo
+      .createQueryBuilder('log')
+      .select('DISTINCT log.user_id', 'user_id')
+      .where('log.created_at BETWEEN :start AND :end', { start, end })
+      .getRawMany();
 
-      const activeUserCount = logs.length;
+    const activeUserCount = logs.length;
 
-      // Use the "start" date (the day being analyzed)
-      const dayLabel = format(start, 'yyyy-MM-dd');
+    // Use the "start" date (the day being analyzed)
+    const dayLabel = format(start, 'yyyy-MM-dd');
 
-      let dailyRecord = await this.dailyActiveUsersRepo.findOne({
-        where: { date: start },
+    let dailyRecord = await this.dailyActiveUsersRepo.findOne({
+      where: { date: start },
+    });
+
+    if (dailyRecord) {
+      dailyRecord.active_users = activeUserCount;
+    } else {
+      dailyRecord = this.dailyActiveUsersRepo.create({
+        date: dayLabel,
+        active_users: activeUserCount,
       });
-
-      if (dailyRecord) {
-        dailyRecord.active_users = activeUserCount;
-      } else {
-        dailyRecord = this.dailyActiveUsersRepo.create({
-          date: dayLabel,
-          active_users: activeUserCount,
-        });
-      }
-
-      await this.dailyActiveUsersRepo.save(dailyRecord);
-
-      this.logger.log(
-        `Daily active users recorded for ${label ?? dayLabel}: ${activeUserCount}`,
-      );
-
-      return {
-        success: true,
-        data: { date: dayLabel, active_users: activeUserCount },
-        message: `Daily active users count stored successfully for ${label ?? dayLabel}`,
-      };
-    } catch (error) {
-      this.logger.error('Failed to calculate daily active users', error.stack);
-      return {
-        success: false,
-        message: 'Failed to calculate daily active users',
-        status: 500,
-      };
     }
+
+    await this.dailyActiveUsersRepo.save(dailyRecord);
+
+    this.logger.log(
+      `Daily active users recorded for ${label ?? dayLabel}: ${activeUserCount}`,
+    );
   }
 
   // -- Crohn Job to calculate daily active users for the past day
@@ -303,5 +288,55 @@ export class AnalyticsMsService {
   async recordDailyActiveUsers() {
     this.logger.log('Running daily active user aggregation job...');
     await this.calculateAndStoreDailyActiveUsers(); // no params → uses yesterday by default
+  }
+
+  // =============================================
+  // FETCH DAILY ACTIVE USERS FOR A DATE RANGE
+  // =============================================
+
+  async fetchDailyActiveUsersForRange(dateRange: { start: Date; end: Date }) {
+    try {
+      //Always calculate and store today's DAU first
+      const todayStart = startOfDay(new Date());
+      const todayEnd = endOfDay(new Date());
+
+      await this.calculateAndStoreDailyActiveUsers({
+        start: todayStart,
+        end: todayEnd,
+        label: 'today',
+      });
+
+      // Determine range for fetching
+      const start = startOfDay(dateRange.start);
+      const end = endOfDay(dateRange.end);
+
+      // Query the dailyActiveUsers table
+      const query = this.dailyActiveUsersRepo
+        .createQueryBuilder('dau')
+        .where('dau.date BETWEEN :start AND :end', { start, end })
+        .orderBy('dau.date', 'ASC');
+
+      const records = await query.getMany();
+
+      //Map results to desired JSON
+      const result = records.map((r) => ({
+        date: format(new Date(r.date), 'yyyy-MM-dd'),
+        active_users: r.active_users,
+      }));
+
+      return {
+        success: true,
+        message: 'Daily active users fetched successfully',
+        data: result,
+        status: 200,
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch daily active users', error.stack);
+      return {
+        success: false,
+        message: 'Failed to fetch daily active users',
+        status: 500,
+      };
+    }
   }
 }
