@@ -27,13 +27,17 @@ export enum ActivityType {
   ADDED_TO_WORKSPACE = 'ADDED_TO_WORKSPACE',
   CREATED_GROUP = 'CREATED_GROUP',
   POSTED_MESSAGE = 'POSTED_MESSAGE',
+  VIEWED_FLASHCARDS = 'VIEWED FLASHCARDS',
+  VIEWED_RESOURCE = 'VIEWED_RESOURCE',
+  VIEWED_CHAT = 'VIEWED_CHAT',
 
   // Student-side
   STARTED_QUIZ = 'STARTED_QUIZ',
-  COMPLETED_QUIZ = 'COMPLETED_QUIZ',
+  SUBMITTED_QUIZ = 'SUBMITTED_QUIZ',
   JOINED_STUDY_GROUP = 'JOINED_STUDY_GROUP',
   SUBMITTED_ASSIGNMENT = 'SUBMITTED_ASSIGNMENT',
   GENERATED_STUDY_PLAN = 'GENERATED_STUDY_PLAN',
+  VIEWED_STUDY_PLAN = 'VIEWED_STUDY_PLAN',
 
   // Tutor-side
   RECEIVED_SUBMISSION = 'RECEIVED_SUBMISSION', // optional, when student submits
@@ -43,36 +47,42 @@ export enum ActivityType {
   // Admin-side
   DELETED_GROUP = 'DELETED_GROUP',
   CREATED_WORKSPACE = 'CREATED_WORKSPACE',
+  DELETED_WORKSPACE = 'DELETED_WORSPCAE',
 }
 
 export const ActivityMessageMap: Record<ActivityType, string> = {
   // Common
   [ActivityType.LOGIN]: 'logged in',
-  [ActivityType.DOWNLOADED_RESOURCE]: 'downloaded a resource',
-  [ActivityType.UPLOADED_RESOURCE]: 'uploaded a resource',
+  [ActivityType.DOWNLOADED_RESOURCE]: 'downloaded  resource',
+  [ActivityType.UPLOADED_RESOURCE]: 'uploaded  resource',
   [ActivityType.GENERATED_FLASHCARD]: 'generated flashcards',
-  [ActivityType.JOINED_WHITEBOARD]: 'joined a whiteboard session',
-  [ActivityType.JOINED_DOCUMENT]: 'joined a collaborative document',
-  [ActivityType.ADDED_TO_GROUP]: 'was added to a group',
-  [ActivityType.ADDED_TO_WORKSPACE]: 'was added to a workspace',
-  [ActivityType.CREATED_GROUP]: 'created a new group',
-  [ActivityType.POSTED_MESSAGE]: 'posted a message',
+  [ActivityType.JOINED_WHITEBOARD]: 'joined  whiteboard session',
+  [ActivityType.JOINED_DOCUMENT]: 'joined  collaborative document',
+  [ActivityType.ADDED_TO_GROUP]: 'was added to  group',
+  [ActivityType.ADDED_TO_WORKSPACE]: 'was added to  workspace',
+  [ActivityType.CREATED_GROUP]: 'created  new group',
+  [ActivityType.POSTED_MESSAGE]: 'posted  message',
+  [ActivityType.VIEWED_FLASHCARDS]: 'viewed flashcards',
+  [ActivityType.VIEWED_RESOURCE]: 'viewed  resource',
+  [ActivityType.VIEWED_CHAT]: 'viewed  chat',
 
   // Student-side
-  [ActivityType.STARTED_QUIZ]: 'started a quiz',
-  [ActivityType.COMPLETED_QUIZ]: 'completed a quiz',
-  [ActivityType.JOINED_STUDY_GROUP]: 'joined a study group',
-  [ActivityType.SUBMITTED_ASSIGNMENT]: 'submitted an assignment',
-  [ActivityType.GENERATED_STUDY_PLAN]: 'generated a study plan',
+  [ActivityType.STARTED_QUIZ]: 'started quiz',
+  [ActivityType.SUBMITTED_QUIZ]: 'submitted quiz',
+  [ActivityType.JOINED_STUDY_GROUP]: 'joined study group',
+  [ActivityType.SUBMITTED_ASSIGNMENT]: 'submitted assignment',
+  [ActivityType.GENERATED_STUDY_PLAN]: 'generated study plan',
+  [ActivityType.VIEWED_STUDY_PLAN]: 'viewed study plan',
 
   // Tutor-side
-  [ActivityType.RECEIVED_SUBMISSION]: 'received a student submission',
-  [ActivityType.CREATED_QUIZ]: 'created a quiz',
-  [ActivityType.GRADED_ASSIGNMENT]: 'graded an assignment',
+  [ActivityType.RECEIVED_SUBMISSION]: 'received student submission',
+  [ActivityType.CREATED_QUIZ]: 'created quiz',
+  [ActivityType.GRADED_ASSIGNMENT]: 'graded assignment',
 
   // Admin-side
-  [ActivityType.DELETED_GROUP]: 'deleted a group',
-  [ActivityType.CREATED_WORKSPACE]: 'created a workspace',
+  [ActivityType.DELETED_GROUP]: 'deleted group',
+  [ActivityType.CREATED_WORKSPACE]: 'created workspace',
+  [ActivityType.DELETED_WORKSPACE]: 'deleted workspace',
 };
 
 export const RoleActivityMap = {
@@ -86,11 +96,14 @@ export const RoleActivityMap = {
     ActivityType.ADDED_TO_GROUP,
     ActivityType.ADDED_TO_WORKSPACE,
     ActivityType.STARTED_QUIZ,
-    ActivityType.COMPLETED_QUIZ,
+    ActivityType.SUBMITTED_QUIZ,
     ActivityType.JOINED_STUDY_GROUP,
     ActivityType.SUBMITTED_ASSIGNMENT,
     ActivityType.GENERATED_STUDY_PLAN,
     ActivityType.POSTED_MESSAGE,
+    ActivityType.VIEWED_FLASHCARDS,
+    ActivityType.VIEWED_RESOURCE,
+    ActivityType.VIEWED_CHAT,
   ],
   tutor: [
     ActivityType.LOGIN,
@@ -106,19 +119,22 @@ export const RoleActivityMap = {
     ActivityType.GRADED_ASSIGNMENT,
     ActivityType.CREATED_GROUP,
     ActivityType.POSTED_MESSAGE,
+    ActivityType.VIEWED_FLASHCARDS,
+    ActivityType.VIEWED_RESOURCE,
+    ActivityType.VIEWED_CHAT,
   ],
   admin: [
     ActivityType.LOGIN,
     ActivityType.CREATED_WORKSPACE,
     ActivityType.DELETED_GROUP,
-    ActivityType.CREATED_GROUP,
+    ActivityType.DELETED_WORKSPACE,
   ],
 } as const;
 
 @Entity('user_activity_log')
 export class UserActivityLog {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column('uuid')
   user_id: string;
