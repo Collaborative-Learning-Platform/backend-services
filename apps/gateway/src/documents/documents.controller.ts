@@ -190,4 +190,34 @@ export class DocumentController {
       data: response.data,
     });
   }
+
+  // --- Update Document Contributors ---
+  @Put(':id/contributors')
+  async updateContributors(
+    @Param('id') id: string,
+    @Body('contributorIds') contributorIds: string[],
+    @Res() res: Response,
+  ) {
+    const response = await lastValueFrom(
+      this.DocumentClient.send(
+        { cmd: 'update_document_contributors' },
+        { id, contributorIds },
+      ),
+    );
+
+    if (response?.error) {
+      const ret = handleValidationError(response.error);
+      return res.json(ret);
+    }
+
+    if (!response?.success) {
+      return res.json({
+        success: false,
+        message: response.message || 'Failed to update contributors',
+        status: response.status || 400,
+      });
+    }
+
+    return res.json(response);
+  }
 }

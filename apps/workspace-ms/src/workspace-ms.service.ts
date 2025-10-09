@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Workspace } from './entity/workspace.entity';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { UserWorkspace } from './entity/user-workspace.entity';
 import { createGroupDto } from './dto/createGroup.dto';
 import { Group } from './entity/group.entity';
@@ -17,6 +17,10 @@ import { addUsersToGroupDto } from './dto/addUsersToGroup.dto';
 export class WorkspaceMsService {
   constructor(
     @Inject('AUTH_SERVICE') private readonly authService: ClientProxy,
+    @Inject('STORAGE_SERVICE') private readonly storageService: ClientProxy,
+    @Inject('QUIZ_SERVICE') private readonly quizService: ClientProxy,
+    @Inject('DOCUMENT_SERVICE') private readonly documentService: ClientProxy,
+    @Inject('CHAT_SERVICE') private readonly chatService: ClientProxy,
     @InjectRepository(Workspace)
     private readonly workspaceRepository: Repository<Workspace>,
     @InjectRepository(UserWorkspace)
@@ -25,6 +29,7 @@ export class WorkspaceMsService {
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(UserGroup)
     private readonly userGroupRepository: Repository<UserGroup>,
+    private readonly dataSource: DataSource,
   ) {}
 
   getHello(): string {
@@ -704,7 +709,7 @@ export class WorkspaceMsService {
 
   //Function for getting all the groups and all the workspaces the user is in
   async getUserWorkspacesWithGroups(data: { userId: string }) {
-    // Step 1: Get all the workspaces the user is in
+    //  Get all the workspaces the user is in
     try {
       const userWorkspaces = await this.userWorkspaceRepository.find({
         where: { userId: data.userId },
@@ -791,11 +796,119 @@ export class WorkspaceMsService {
     }
   }
 
+  async deleteGroup(data: { groupId: string }) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const group = await queryRunner.manager.findOne(Group, {
+        where: { groupId: data.groupId },
+      });
+      
+      if (!group) {
+        await queryRunner.rollbackTransaction();
+        return {
+          success: false,
+          message: 'Group not found',
+          status: 404,
+        };
+      }
+
+      // Delete the group (cascade will remove user-groups)
+      await queryRunner.manager.remove(group);
+      
+      // Delete related entities in other microservices
+     const quizDeleteResponse = await this.deleteGroupQuizzes({ groupId: data.groupId });
+     const documentDeleteResponse = await this.deleteGroupDocuments({ groupId: data.groupId });
+     const chatDeleteResponse = await this.deleteGroupChats({ groupId: data.groupId });
+     const storageDeleteResponse = await this.deleteGroupStorage({ groupId: data.groupId });
+
+
+
+     if (!quizDeleteResponse.success || !documentDeleteResponse.success || !chatDeleteResponse.success || !storageDeleteResponse.success) {
+       await queryRunner.rollbackTransaction();
+       return {
+         success: false,
+         message: 'Failed to delete related entities',
+         status: 500,
+       };
+     }
+
+      // Commit the transaction if all operations succeed
+      await queryRunner.commitTransaction();
+
+      return {
+        success: true,
+        message: 'Group deleted successfully',
+      };
+    } catch (error) {
+      // Rollback the transaction on any error
+      await queryRunner.rollbackTransaction();
+      console.error('Failed to delete group', error);
+      return {
+        success: false,
+        message: 'Failed to delete group',
+        status: 500,
+      };
+    } finally {
+      // Release the query runner
+      await queryRunner.release();
+    }
+  }
 
 
 
 
-  //supporting functions for bulk user addition
+  //supportive functions for group deletion (interservice communication to delete related entities)
+  //no need to delete user-groups as they are cascade deleted with group deletion
+
+  async deleteGroupQuizzes(data: { groupId: string }) {
+    try{
+      const response = await lastValueFrom(this.quizService.send({ cmd: 'delete_group_quizzes' }, { groupId: data.groupId }));
+      return response;
+    } catch (error) {
+      console.error('Failed to delete group quizzes', error);
+      return { success: false, message: 'Failed to delete group quizzes' };
+    }
+  }
+
+  async deleteGroupDocuments(data: { groupId: string }) {
+    try{
+      const response = await lastValueFrom(this.documentService.send({ cmd: 'delete_group_documents' },  data.groupId ));
+      return response;
+    } catch (error) {
+      console.error('Failed to delete group documents', error);
+      return { success: false, message: 'Failed to delete group documents' };
+    }
+  }
+
+  async deleteGroupChats(data: { groupId: string }) {
+    try{
+      const response = await lastValueFrom(this.chatService.send({ cmd: 'delete_group_chat' }, data.groupId));
+      return response;
+    } catch (error) {
+      console.error('Failed to delete group chats', error);
+      return { success: false, message: 'Failed to delete group chats' };
+    }
+  }
+
+  async deleteGroupStorage(data: { groupId: string }) {
+    try{
+      const response = await lastValueFrom(this.storageService.send({ cmd: 'clear_group_storage' }, { groupId: data.groupId }));
+      return response;
+    } catch (error) {
+      console.error('Failed to delete group storage', error);
+      return { success: false, message: 'Failed to delete group storage' };
+    }
+  }
+
+
+
+
+
+
+  //supportive functions for bulk user addition
   private parseCsv(fileBuffer: Buffer): Promise<any[]> {
     const results: any[] = [];
 

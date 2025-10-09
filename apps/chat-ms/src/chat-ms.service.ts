@@ -41,4 +41,20 @@ export class ChatMsService {
       createdAt: m.createdAt,
     }));
   }
+
+  async deleteGroupChat(groupId: string) {
+    try {
+      const deleteResult = await this.messageRepo.delete({ roomId: groupId });
+      return {
+        success: true,
+        message: `Deleted ${deleteResult.affected} messages for group ${groupId}`,
+      };
+    } catch (error) {
+      console.error('Failed to delete group chat messages', error);
+      return {
+        success: false,
+        message: 'Failed to delete group chat messages: ' + error.message,
+      };
+    }
+  }
 }

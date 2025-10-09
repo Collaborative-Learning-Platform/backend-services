@@ -30,7 +30,39 @@ import { UserGroup } from './entity/user-group.entity';
           host: '127.0.0.1',
           port: 4000,
         },
-      }
+      },
+      {
+        name: 'STORAGE_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4007,
+        },
+      },
+      {
+        name: 'QUIZ_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4004,
+        },
+      },
+      {
+        name:'DOCUMENT_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4006,
+        },
+      },
+      {
+        name :'CHAT_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4005,
+        },
+      },
     ]),
     TypeOrmModule.forRoot({
           type: 'postgres',

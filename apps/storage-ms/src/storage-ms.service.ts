@@ -8,11 +8,14 @@ import { ResourceTag } from './entity/resourceTags.entity';
 import { v4 as uuid } from 'uuid';
 import { GetUploadUrlDto } from './dto/getUploadUrl.dto';
 import { In } from 'typeorm';
+import { ClientProxy } from '@nestjs/microservices';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class StorageMsService {
   constructor(
     @Inject('S3_CLIENT') private readonly s3: S3Client,
+    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
     @InjectRepository(Resource) private resourceRepo: Repository<Resource>,
     @InjectRepository(ResourceTag) private tagRepo: Repository<ResourceTag>,
   ) {}
@@ -62,6 +65,57 @@ export class StorageMsService {
 
     const downloadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
     return { downloadUrl };
+  }
+
+  async generateProfilePicUploadUrl(userId: string, fileName: string, contentType: string) {
+    const key = `users/${userId}/profile-pics/${uuid()}-${fileName}`;
+
+    try {
+      const command = new PutObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: key,
+        ContentType: contentType,
+      });
+
+      const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
+
+      const result = await lastValueFrom(
+        this.authClient.send({ cmd: 'auth_store_profile_pic_url' }, { userId, profilePicUrl: key })
+      );
+
+      if (!result?.success) {
+        throw new Error('Failed to store profile picture URL in auth service');
+      }
+
+      return { uploadUrl, key, success: true };
+
+    } catch (error) {
+      console.error('Error generating profile pic upload URL:', error);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async generateProfilePicDownloadUrl(userId: string) {
+    try {
+      const result = await lastValueFrom(
+        this.authClient.send({ cmd: 'get_profile_picture_url' }, { userId })
+      );
+      if (!result?.success) {
+        return { success: false, message: 'Failed to fetch user from auth service' };
+      }
+
+      const profilePicUrl = result.profilePictureUrl;
+      const command = new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: profilePicUrl,
+      });
+
+      const downloadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
+      return {success:true, downloadUrl };
+    } catch (error) {
+      console.error('Error generating profile pic download URL:', error);
+      return { success: false, message: error.message };
+    }
   }
 
   async listGroupResources(groupId: string) {
@@ -140,6 +194,30 @@ export class StorageMsService {
     }catch (error) {
       console.error('Error fetching resources by group IDs:', error);
       return { success: false, message: 'Error fetching resources by group IDs' };
+    }
+  }
+
+  async deleteResourcesByGroupId(groupId: string) {
+    try{
+      const resources = await this.resourceRepo.find({ where: { groupId } });
+      if (resources.length === 0) {
+        return { success: true, message: 'No resources to delete for this group' };
+      }
+
+      const deletePromises = resources.map(resource => {
+        return this.s3.send(new DeleteObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Key: resource.s3Key,
+        }));
+      });
+
+      await Promise.all(deletePromises);
+      await this.resourceRepo.remove(resources);
+
+      return { success: true, message: 'Resources deleted successfully' };
+    }catch (error) {
+      console.error('Error deleting resources by group ID:', error);
+      return { success: false, message: 'Error deleting resources by group ID' };
     }
   }
 
