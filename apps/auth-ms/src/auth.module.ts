@@ -5,23 +5,30 @@ dotenv.config({ path: process.cwd() + '/env/.common.env' });
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './entity/user.entity'; 
+import { User } from './entity/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { RefreshToken } from './entity/refreshToken.entity';
-import { ClientsModule,Transport } from '@nestjs/microservices';
-
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
     ClientsModule.register([
       {
-              name: 'NOTIFICATION_SERVICE',
-              transport: Transport.TCP,
-              options: {
-                host: '127.0.0.1',
-                port: 4002, 
-              },
-            },
+        name: 'NOTIFICATION_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4002,
+        },
+      },
+      {
+        name: 'ANALYTICS_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4010,
+        },
+      },
     ]),
 
     TypeOrmModule.forRoot({
@@ -37,13 +44,10 @@ import { ClientsModule,Transport } from '@nestjs/microservices';
         rejectUnauthorized: false,
       },
     }),
-    TypeOrmModule.forFeature([
-      User,
-      RefreshToken
-    ]),
+    TypeOrmModule.forFeature([User, RefreshToken]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET, 
-      signOptions: { expiresIn: '1h' }, 
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '1h' },
     }),
   ],
   controllers: [AuthController],

@@ -42,20 +42,12 @@ export class AnalyticsMsController {
   }
 
   // =============================================
-  // CALCULATE DAILY ACTIVE USERS (DASHBOARD)
+  // FETCH DAILY ACTIVE USERS FOR A TIME PERIOD
   // =============================================
-  @MessagePattern({ cmd: 'calculate_daily_active_users' })
-  async calculateDailyActiveUsers(): Promise<ServiceResponse<any>> {
-    this.logger.debug(`Calculating today's active users for dashboard view`);
-
-    const today = new Date();
-    const start = new Date(today.setHours(0, 0, 0, 0));
-    const end = new Date(today.setHours(23, 59, 59, 999));
-
-    return this.analyticsService.calculateAndStoreDailyActiveUsers({
-      start,
-      end,
-      label: 'today',
-    });
+  @MessagePattern({ cmd: 'get_daily_active_users' })
+  async fetchDailyActiveUsers(
+    @Payload() dateRange: { start: Date; end: Date },
+  ): Promise<ServiceResponse<any>> {
+    return this.analyticsService.fetchDailyActiveUsersForRange(dateRange);
   }
 }

@@ -16,6 +16,7 @@ import { DocumentController } from './documents/documents.controller';
 import { WhiteboardController } from './whiteboard/whiteboard.controller';
 import { WhiteboardGateway } from './whiteboard/whiteboard.gateway';
 import { AiserviceController } from './aiservice/aiservice.controller';
+import { AnalyticsController } from './analytics/analytics.controller';
 
 @Module({
   imports: [
@@ -77,7 +78,6 @@ import { AiserviceController } from './aiservice/aiservice.controller';
         },
       },
       {
-       
         name: 'AI_SERVICE',
         transport: Transport.TCP,
         options: {
@@ -91,6 +91,14 @@ import { AiserviceController } from './aiservice/aiservice.controller';
         options: {
           host: '127.0.0.1',
           port: 4009,
+        },
+      },
+      {
+        name: 'ANALYTICS_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4010,
         },
       },
     ]),
@@ -110,6 +118,7 @@ import { AiserviceController } from './aiservice/aiservice.controller';
     DocumentController,
     WhiteboardController,
     AiserviceController,
+    AnalyticsController,
   ],
   providers: [ChatGateway, WhiteboardGateway],
 })
