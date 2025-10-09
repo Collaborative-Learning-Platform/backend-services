@@ -50,7 +50,7 @@ export class WhiteboardGateway
       const room = this.server?.sockets?.adapter?.rooms?.get(roomId);
       const roomMembers = room ? Array.from(room) : [];
       this.logger.log(
-        `🏠 After join: Room ${roomId} has ${roomMembers.length} members: ${roomMembers.join(', ')}`,
+        `After join: Room ${roomId} has ${roomMembers.length} members: ${roomMembers.join(', ')}`,
       );
     } catch (error) {
       this.logger.warn(`Could not check room membership: ${error.message}`);
