@@ -1,12 +1,61 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AnalyticsMsService } from './analytics-ms.service';
+import { ServiceResponse } from './interfaces/serviceresponse.interface';
+import {
+  ActivityCategory,
+  ActivityType,
+} from './entity/user-activity-log.entity';
 
-@Controller()
+@Controller('analytics')
 export class AnalyticsMsController {
-  constructor(private readonly analyticsMsService: AnalyticsMsService) {}
+  private readonly logger = new Logger(AnalyticsMsController.name);
 
-  @Get()
-  getHello(): string {
-    return this.analyticsMsService.getHello();
+  constructor(private readonly analyticsService: AnalyticsMsService) {}
+
+  // =============================================
+  // LOG USER ACTIVITY
+  // =============================================
+  @MessagePattern({ cmd: 'log_user_activity' })
+  async logUserActivity(
+    @Payload()
+    payload: {
+      user_id: string;
+      role: 'STUDENT' | 'TUTOR' | 'ADMIN';
+      category: ActivityCategory;
+      activity_type: ActivityType;
+      description?: string;
+      metadata?: Record<string, any>;
+    },
+  ): Promise<ServiceResponse<any>> {
+    return this.analyticsService.logUserActivity(payload);
+  }
+
+  // =============================================
+  // RECORD SESSION END TIME
+  // =============================================
+  @MessagePattern({ cmd: 'end_user_session' })
+  async endUserSession(
+    @Payload() sessionId: string,
+  ): Promise<ServiceResponse<any>> {
+    return this.analyticsService.updateSessionEndTime(sessionId);
+  }
+
+  // =============================================
+  // CALCULATE DAILY ACTIVE USERS (DASHBOARD)
+  // =============================================
+  @MessagePattern({ cmd: 'calculate_daily_active_users' })
+  async calculateDailyActiveUsers(): Promise<ServiceResponse<any>> {
+    this.logger.debug(`Calculating today's active users for dashboard view`);
+
+    const today = new Date();
+    const start = new Date(today.setHours(0, 0, 0, 0));
+    const end = new Date(today.setHours(23, 59, 59, 999));
+
+    return this.analyticsService.calculateAndStoreDailyActiveUsers({
+      start,
+      end,
+      label: 'today',
+    });
   }
 }
