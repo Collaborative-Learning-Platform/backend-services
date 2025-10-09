@@ -296,7 +296,7 @@ function handleDocumentUpdate(sessionId: string, data: any) {
     JSON.stringify(broadcastMessage, null, 2),
   );
 
-  // Broadcast update to other clients in TLDraw format
+  
   broadcastToRoom(session.roomId, broadcastMessage, sessionId);
 }
 
@@ -306,7 +306,7 @@ export function bootstrapSyncServer(wsPort: number) {
 
   wss.on('connection', (ws: WebSocket, req) => {
     const url = new URL(req.url || '', `http://${req.headers.host}`);
-    const path = url.pathname; // e.g., /connect/room123
+    const path = url.pathname; 
     const pathParts = path.split('/').filter(Boolean);
 
     if (pathParts.length < 2 || pathParts[0] !== 'connect') {
@@ -323,8 +323,8 @@ export function bootstrapSyncServer(wsPort: number) {
     console.log(`WebSocket connecting: room=${roomId}, session=${sessionId}`);
 
     try {
-      // Handle connection
-      handleJoinRoom(sessionId, roomId, ws); // Handle incoming messages
+     
+      handleJoinRoom(sessionId, roomId, ws);
       ws.on('message', (data) => {
         try {
           const message = JSON.parse(data.toString());
@@ -335,7 +335,7 @@ export function bootstrapSyncServer(wsPort: number) {
 
           switch (message.type) {
             case 'document-update':
-              console.log(`🔄 Processing document update from ${sessionId}`);
+              console.log(`Processing document update from ${sessionId}`);
               handleDocumentUpdate(sessionId, message.data);
               break;
             case 'ping':
@@ -352,7 +352,7 @@ export function bootstrapSyncServer(wsPort: number) {
         }
       });
 
-      // Handle connection close
+      
       ws.on('close', () => {
         console.log(
           `WebSocket disconnected: room=${roomId}, session=${sessionId}`,
@@ -360,7 +360,7 @@ export function bootstrapSyncServer(wsPort: number) {
         handleLeaveRoom(sessionId);
       });
 
-      // Handle connection errors
+      
       ws.on('error', (error) => {
         console.error(`WebSocket error for session ${sessionId}:`, error);
         handleLeaveRoom(sessionId);
@@ -378,14 +378,14 @@ export function bootstrapSyncServer(wsPort: number) {
     `Connect using: ws://localhost:${wsPort}/connect/{roomId}?sessionId={sessionId}`,
   );
 
-  // Cleanup inactive rooms every 5 minutes
+ 
   setInterval(
     () => {
       const now = new Date();
       for (const [roomId, room] of rooms.entries()) {
         const inactiveTime = now.getTime() - room.lastActivity.getTime();
         if (inactiveTime > 5 * 60 * 1000 && room.clients.size === 0) {
-          // 5 minutes
+          
           console.log(`Cleaning up inactive room: ${roomId}`);
           rooms.delete(roomId);
         }
