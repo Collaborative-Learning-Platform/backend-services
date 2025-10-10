@@ -12,6 +12,8 @@ import { Group } from './entity/group.entity';
 import { UserGroup } from './entity/user-group.entity';
 
 
+const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
+
 @Module({
   imports: [
     ClientsModule.register([
@@ -19,7 +21,7 @@ import { UserGroup } from './entity/user-group.entity';
         name: 'NOTIFICATION_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'notification-ms' : '127.0.0.1',
           port: 4002,
         },
       },
@@ -27,7 +29,7 @@ import { UserGroup } from './entity/user-group.entity';
         name: 'AUTH_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'auth-ms' : '127.0.0.1',
           port: 4000,
         },
       },
@@ -35,7 +37,7 @@ import { UserGroup } from './entity/user-group.entity';
         name: 'STORAGE_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'storage-ms' : '127.0.0.1',
           port: 4007,
         },
       },
@@ -43,7 +45,7 @@ import { UserGroup } from './entity/user-group.entity';
         name: 'QUIZ_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'quiz-ms' : '127.0.0.1',
           port: 4004,
         },
       },
@@ -51,7 +53,7 @@ import { UserGroup } from './entity/user-group.entity';
         name:'DOCUMENT_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'document-ms' : '127.0.0.1',
           port: 4006,
         },
       },
@@ -59,7 +61,7 @@ import { UserGroup } from './entity/user-group.entity';
         name :'CHAT_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'chat-ms' : '127.0.0.1',
           port: 4005,
         },
       },

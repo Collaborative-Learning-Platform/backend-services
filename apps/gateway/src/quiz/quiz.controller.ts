@@ -10,11 +10,11 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { Response } from 'express';
-import { CreateQuizDto } from '../../../quiz-ms/src/dto/create-quiz.dto';
-import { UpdateQuizDto } from '../../../quiz-ms/src/dto/update-quiz.dto';
+import { CreateQuizDto } from './dto/create-quiz.dto';
+import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { handleValidationError } from '../utils/validationErrorHandler';
-import { CreateQuizQuestionDto } from 'apps/quiz-ms/src/dto/create-quiz-question.dto';
-import { CreateQuizAttemptDto } from 'apps/quiz-ms/src/dto/create-quiz-attempt.dto';
+import { CreateQuizQuestionDto } from './dto/create-quiz-question.dto';
+import { CreateQuizAttemptDto } from './dto/create-quiz-attempt.dto';
 
 @Controller('quiz')
 export class QuizController {

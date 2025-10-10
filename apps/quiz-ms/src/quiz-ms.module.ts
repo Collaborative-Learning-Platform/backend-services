@@ -5,11 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Quiz } from './entity/quiz.entity';
 import { QuizQuestion } from './entity/quiz-question.entity';
 import { QuizAttempt } from './entity/quiz-attempt.entity';
-import { User } from '../../user-ms/src/entity/user.entity';
 import { Transport } from '@nestjs/microservices';
 import * as dotenv from 'dotenv';
 import { ClientsModule } from '@nestjs/microservices';
 dotenv.config({ path: process.cwd() + '/env/.common.env' });
+
+const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ dotenv.config({ path: process.cwd() + '/env/.common.env' });
         name: 'AUTH_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'auth-ms' : '127.0.0.1',
           port: 4000,
         },
       },
@@ -26,7 +27,7 @@ dotenv.config({ path: process.cwd() + '/env/.common.env' });
         name: 'WORKSPACE_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'workspace-ms' : '127.0.0.1',
           port: 4003, 
         },
       },

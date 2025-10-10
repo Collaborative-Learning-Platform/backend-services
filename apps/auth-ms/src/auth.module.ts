@@ -10,6 +10,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { RefreshToken } from './entity/refreshToken.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
+const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
+
 @Module({
   imports: [
     ClientsModule.register([
@@ -17,7 +19,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         name: 'NOTIFICATION_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'notification-ms' : '127.0.0.1',
           port: 4002,
         },
       },
@@ -25,7 +27,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         name: 'ANALYTICS_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'analytics-ms' : '127.0.0.1',
           port: 4010,
         },
       },

@@ -10,6 +10,7 @@ import { ResourceTag } from './entity/resourceTags.entity';
 import { S3Provider } from './providers/S3Provider';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
+const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
 @Module({
   imports: [
     ClientsModule.register([
@@ -17,7 +18,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         name: 'AUTH_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'auth-ms' : '127.0.0.1',
           port: 4000,
         },
       },

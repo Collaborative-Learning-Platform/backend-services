@@ -6,6 +6,7 @@ import { UsersController } from './users/users.controller';
 import { JwtModule } from '@nestjs/jwt';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: process.cwd() + '/env/.gateway.env' });
+dotenv.config({ path: process.cwd() + '/env/.common.env' });
 import { WorkspaceController } from './workspace/workspace.controller';
 import { DashboardController } from './dashboard/dashboard.controller';
 import { ChatController } from './chat/chat.controller';
@@ -18,6 +19,9 @@ import { WhiteboardGateway } from './whiteboard/whiteboard.gateway';
 import { AiserviceController } from './aiservice/aiservice.controller';
 import { AnalyticsController } from './analytics/analytics.controller';
 
+const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
+
+
 @Module({
   imports: [
     ClientsModule.register([
@@ -25,7 +29,7 @@ import { AnalyticsController } from './analytics/analytics.controller';
         name: 'AUTH_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'auth-ms' : '127.0.0.1',
           port: 4000,
         },
       },
@@ -33,7 +37,7 @@ import { AnalyticsController } from './analytics/analytics.controller';
         name: 'USER_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'user-ms' : '127.0.0.1',
           port: 4001,
         },
       },
@@ -41,7 +45,7 @@ import { AnalyticsController } from './analytics/analytics.controller';
         name: 'WORKSPACE_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'workspace-ms' : '127.0.0.1',
           port: 4003,
         },
       },
@@ -49,7 +53,7 @@ import { AnalyticsController } from './analytics/analytics.controller';
         name: 'QUIZ_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'quiz-ms' : '127.0.0.1',
           port: 4004,
         },
       },
@@ -57,7 +61,7 @@ import { AnalyticsController } from './analytics/analytics.controller';
         name: 'CHAT_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'chat-ms' : '127.0.0.1',
           port: 4005,
         },
       },
@@ -65,7 +69,7 @@ import { AnalyticsController } from './analytics/analytics.controller';
         name: 'DOCUMENT_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'document-ms' : '127.0.0.1',
           port: 4006,
         },
       },
@@ -73,7 +77,7 @@ import { AnalyticsController } from './analytics/analytics.controller';
         name: 'STORAGE_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'storage-ms' : '127.0.0.1',
           port: 4007,
         },
       },
@@ -81,7 +85,7 @@ import { AnalyticsController } from './analytics/analytics.controller';
         name: 'AI_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'ai-ms' : '127.0.0.1',
           port: 4008,
         },
       },
@@ -89,7 +93,7 @@ import { AnalyticsController } from './analytics/analytics.controller';
         name: 'WHITEBOARD_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'whiteboard-ms' : '127.0.0.1',
           port: 4009,
         },
       },
@@ -97,7 +101,7 @@ import { AnalyticsController } from './analytics/analytics.controller';
         name: 'ANALYTICS_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'analytics-ms' : '127.0.0.1',
           port: 4010,
         },
       },

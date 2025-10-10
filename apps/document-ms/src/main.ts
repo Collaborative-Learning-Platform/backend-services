@@ -5,13 +5,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './filters/all-exception.filter';
 import { startHocuspocusCollabServer } from '../hocuspocus.server';
 
+const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
+
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     DocumentMsModule,
     {
       transport: Transport.TCP,
       options: {
-        host: '127.0.0.1',
+        host: isDocker ? '0.0.0.0' : '127.0.0.1',
         port: 4006,
       },
     },

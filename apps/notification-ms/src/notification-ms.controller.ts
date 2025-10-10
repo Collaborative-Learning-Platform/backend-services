@@ -8,10 +8,6 @@ import { MailDataDto } from './dto/mailData.dto';
 export class NotificationMsController {
   constructor(private readonly notificationMsService: NotificationMsService) {}
 
-  // @EventPattern('user_bulk_created')
-  // async handleUserBulkCreated(@Payload() data: UserBulkCreatedEventDto) {
-  //   await this.notificationMsService.handleUserBulkCreated(data);
-  // }
 
   @EventPattern('notify')
   async handleNotify(@Payload() data: MailDataDto) {

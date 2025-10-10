@@ -46,8 +46,10 @@ export class AuthController {
     }
 
 
+
     //Handling unsuccessful login attempts
     if (!response.success) {
+      
       const ret = {
         success: false,
         message: response.message || 'Login failed',
@@ -56,14 +58,17 @@ export class AuthController {
       return res.json(ret);
     }
 
-    this.setAuthCookies(res, response.access_token, response.refresh_token);
+
+
+    await this.setAuthCookies(res, response.access_token, response.refresh_token);
+
 
     
     return res.json({
        success: true,
        role:response.role,
        user_id:response.id,
-      firstTimeLogin: response.firstTimeLogin,
+       firstTimeLogin: response.firstTimeLogin,
       });
   }
 
@@ -164,20 +169,22 @@ export class AuthController {
 
 
 
-  private setAuthCookies(res: Response, access_token: string, refresh_token: string) {
+  private async setAuthCookies(res: Response, access_token: string, refresh_token: string) {
+
     res.cookie('access_token', access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // 15 min
+      secure: false, 
+      sameSite: 'lax', 
+      path: '/',
     });
 
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: false, 
+      sameSite: 'lax', 
+      path: '/',
     });
+
   }
 
 

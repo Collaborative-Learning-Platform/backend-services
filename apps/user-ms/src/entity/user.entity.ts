@@ -1,11 +1,8 @@
-import { Document } from 'apps/document-ms/src/entity/document.entity';
-
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
-  ManyToMany,
 } from 'typeorm';
 
 export enum UserRole {
@@ -34,7 +31,7 @@ export class User {
   @CreateDateColumn({ type: 'timestamp with time zone' })
   created_at: Date;
 
-  @Column()
+  @Column({ nullable: true })
   profile_picture: string;
 
   @Column({ default: true })
