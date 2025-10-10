@@ -103,9 +103,10 @@ services:
     env_file:
       - ./env/.common.env
       - ./env/.document-ms.env
+    ports:
+      - '1234:1234'  # Hocuspocus server port for external access
     expose:
       - '4006'
-      - '1234'  # Hocuspocus server port
     restart: unless-stopped
 
   # File Storage Service
