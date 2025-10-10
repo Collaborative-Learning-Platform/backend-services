@@ -10,6 +10,8 @@ import { ClientsModule } from '@nestjs/microservices';
 import { Transport } from '@nestjs/microservices';
 import { StudyPlan } from './entity/study_plan.entity';
 
+const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
+
 @Module({
   imports: [
     ClientsModule.register([
@@ -17,7 +19,7 @@ import { StudyPlan } from './entity/study_plan.entity';
           name: 'WORKSPACE_SERVICE',
           transport: Transport.TCP,
           options: {
-            host: '127.0.0.1',
+            host: isDocker ? 'workspace-ms' : '127.0.0.1',
             port: 4003,
           },
       },
@@ -25,7 +27,7 @@ import { StudyPlan } from './entity/study_plan.entity';
         name: 'QUIZ_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'quiz-ms' : '127.0.0.1',
           port: 4004,
         },
       },
@@ -33,7 +35,7 @@ import { StudyPlan } from './entity/study_plan.entity';
         name: 'STORAGE_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: isDocker ? 'storage-ms' : '127.0.0.1',
           port: 4007,
         },
       },

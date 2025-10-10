@@ -1,0 +1,100 @@
+# Build artifacts and compiled output
+dist/
+build/
+*.tsbuildinfo
+
+# Dependency directories
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+*.lcov
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Logs
+logs/
+*.log
+lerna-debug.log*
+
+# Environment files (use env files in build context instead)
+.env
+.env.*
+!.env.example
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker files
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+test/
+tests/
+**/__tests__/
+
+# Development scripts
+scripts/
+*.sh
+*.ps1
+
+# Temporary files
+*.tmp
+*.temp
+
+# Package manager files
+.npm
+.yarn/
+
+# ESLint and Prettier
+.eslintrc*
+.prettierrc*
+eslint.config.mjs
+
+# TypeScript config (will be copied selectively in Dockerfile)
+# Keep tsconfig.json and nest-cli.json as they're needed for build
+
+# HTTP test files
+*.http
+rest.http
+
+# Misc development files
+microservicesPorts.txt
+
+# Lock files (npm install will regenerate)
+package-lock.json
+yarn.lock

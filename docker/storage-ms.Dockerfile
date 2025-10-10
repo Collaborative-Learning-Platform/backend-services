@@ -13,11 +13,11 @@ COPY nest-cli.json ./
 RUN npm install
 
 # Copy only this service and shared libs
-COPY apps/workspace-ms ./apps/workspace-ms
+COPY apps/storage-ms ./apps/storage-ms
 COPY libs ./libs
 
 # Build the project
-RUN npm run build:workspace-ms
+RUN npm run build:storage-ms
 
 # -------- STAGE 2: Run --------
 FROM node:18-alpine
@@ -33,4 +33,4 @@ COPY --from=builder /app/node_modules ./node_modules
 # Optional, depending on deployment strategy
 
 # Run the app
-CMD ["node", "dist/apps/workspace-ms/main.js"]
+CMD ["node", "dist/apps/storage-ms/main.js"]

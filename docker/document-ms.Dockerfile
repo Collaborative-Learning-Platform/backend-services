@@ -13,11 +13,11 @@ COPY nest-cli.json ./
 RUN npm install
 
 # Copy only this service and shared libs
-COPY apps/workspace-ms ./apps/workspace-ms
+COPY apps/document-ms ./apps/document-ms
 COPY libs ./libs
 
 # Build the project
-RUN npm run build:workspace-ms
+RUN npm run build:document-ms
 
 # -------- STAGE 2: Run --------
 FROM node:18-alpine
@@ -32,5 +32,8 @@ COPY --from=builder /app/node_modules ./node_modules
 # .env files are mounted via docker-compose volumes
 # Optional, depending on deployment strategy
 
+# Expose port for Hocuspocus server (if needed)
+EXPOSE 1234
+
 # Run the app
-CMD ["node", "dist/apps/workspace-ms/main.js"]
+CMD ["node", "dist/apps/document-ms/main.js"]
