@@ -1,12 +1,11 @@
-name: Build and Push backend-services to Amazon ECR
+name: Build and Push Changed Microservices to Amazon ECR
 
 on:
   push:
-    branches: [ main ]  # adjust as needed
+    branches: [ main ]
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: learni/backend-services
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
@@ -28,18 +27,53 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push backend-services image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      - name: Get changed folders
+        id: changes
         run: |
-          docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
-            -f docker/backend-services.Dockerfile .
-          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          echo "📂 Detecting changed folders..."
+          git fetch origin main --depth=2
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || true)
+          echo "$CHANGED_FILES" > changed_files.txt
+          echo "Changed files:"
+          cat changed_files.txt
 
-      - name: Tag latest and push
+          # Identify changed services
+          SERVICES=""
+          for file in $CHANGED_FILES; do
+            if [[ "$file" == apps/*/* ]]; then
+              service=$(echo "$file" | cut -d'/' -f2)
+              SERVICES="$SERVICES $service"
+            elif [[ "$file" == docker/* ]]; then
+              service=$(basename "$file" .Dockerfile)
+              SERVICES="$SERVICES $service"
+            fi
+          done
+
+          # Remove duplicates
+          UNIQUE_SERVICES=$(echo $SERVICES | tr ' ' '\n' | sort -u | tr '\n' ' ')
+          echo "Detected changed services: $UNIQUE_SERVICES"
+
+          echo "services=$UNIQUE_SERVICES" >> $GITHUB_OUTPUT
+
+      - name: Build and push changed services
+        if: steps.changes.outputs.services != ''
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SERVICES: ${{ steps.changes.outputs.services }}
         run: |
-          docker tag $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
-                     $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
-          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+          for SERVICE in $SERVICES; do
+            FILE=docker/$SERVICE.Dockerfile
+            if [ -f "$FILE" ]; then
+              echo "🚀 Building and pushing $SERVICE..."
+              ECR_REPO="learni/$SERVICE"
+
+              docker build -t $ECR_REGISTRY/$ECR_REPO:${{ env.IMAGE_TAG }} -f $FILE .
+              docker push $ECR_REGISTRY/$ECR_REPO:${{ env.IMAGE_TAG }}
+
+              docker tag $ECR_REGISTRY/$ECR_REPO:${{ env.IMAGE_TAG }} \
+                         $ECR_REGISTRY/$ECR_REPO:latest
+              docker push $ECR_REGISTRY/$ECR_REPO:latest
+            else
+              echo "⚠️ Skipping $SERVICE — Dockerfile not found at $FILE"
+            fi
+          done
