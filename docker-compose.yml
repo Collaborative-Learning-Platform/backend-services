@@ -23,6 +23,7 @@ services:
       - analytics-ms
     restart: unless-stopped
 
+
   # Authentication Service
   auth-ms:
     build:
@@ -34,6 +35,7 @@ services:
     expose:
       - '4000'
     restart: unless-stopped
+
 
   # User Management Service
   user-ms:
@@ -103,9 +105,11 @@ services:
     env_file:
       - ./env/.common.env
       - ./env/.document-ms.env
+    ports:
+      - '1234:1234'  # Hocuspocus server port for external access
     expose:
       - '4006'
-      - '1234'  # Hocuspocus server port
+
     restart: unless-stopped
 
   # File Storage Service
