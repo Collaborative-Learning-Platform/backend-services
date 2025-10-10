@@ -1,5 +1,7 @@
 # -------- STAGE 1: Build --------
+
 FROM node:20-alpine AS builder
+
 
 # Set working directory
 WORKDIR /app
@@ -20,7 +22,9 @@ COPY libs ./libs
 RUN npm run build:analytics-ms
 
 # -------- STAGE 2: Run --------
+
 FROM node:20-alpine
+
 
 WORKDIR /app
 

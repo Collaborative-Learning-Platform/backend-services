@@ -1,0 +1,79 @@
+name: Build and Push Changed Microservices to Amazon ECR
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: us-east-1
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get changed folders
+        id: changes
+        run: |
+          echo "📂 Detecting changed folders..."
+          git fetch origin main --depth=2
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || true)
+          echo "$CHANGED_FILES" > changed_files.txt
+          echo "Changed files:"
+          cat changed_files.txt
+
+          # Identify changed services
+          SERVICES=""
+          for file in $CHANGED_FILES; do
+            if [[ "$file" == apps/*/* ]]; then
+              service=$(echo "$file" | cut -d'/' -f2)
+              SERVICES="$SERVICES $service"
+            elif [[ "$file" == docker/* ]]; then
+              service=$(basename "$file" .Dockerfile)
+              SERVICES="$SERVICES $service"
+            fi
+          done
+
+          # Remove duplicates
+          UNIQUE_SERVICES=$(echo $SERVICES | tr ' ' '\n' | sort -u | tr '\n' ' ')
+          echo "Detected changed services: $UNIQUE_SERVICES"
+
+          echo "services=$UNIQUE_SERVICES" >> $GITHUB_OUTPUT
+
+      - name: Build and push changed services
+        if: steps.changes.outputs.services != ''
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SERVICES: ${{ steps.changes.outputs.services }}
+        run: |
+          for SERVICE in $SERVICES; do
+            FILE=docker/$SERVICE.Dockerfile
+            if [ -f "$FILE" ]; then
+              echo "🚀 Building and pushing $SERVICE..."
+              ECR_REPO="learni/$SERVICE"
+
+              docker build -t $ECR_REGISTRY/$ECR_REPO:${{ env.IMAGE_TAG }} -f $FILE .
+              docker push $ECR_REGISTRY/$ECR_REPO:${{ env.IMAGE_TAG }}
+
+              docker tag $ECR_REGISTRY/$ECR_REPO:${{ env.IMAGE_TAG }} \
+                         $ECR_REGISTRY/$ECR_REPO:latest
+              docker push $ECR_REGISTRY/$ECR_REPO:latest
+            else
+              echo "⚠️ Skipping $SERVICE — Dockerfile not found at $FILE"
+            fi
+          done
