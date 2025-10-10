@@ -12,7 +12,7 @@ import { Repository } from 'typeorm';
 import { UserStreak } from './entity/user-streak.entity';
 import { startOfDay, subDays, isSameDay, endOfDay, format } from 'date-fns';
 import { DailyActiveUsers } from './entity/daily-active-users.entity';
-import { Cron, CronExpression } from '@nestjs/schedule';
+// import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class AnalyticsMsService {
@@ -284,7 +284,7 @@ export class AnalyticsMsService {
 
   // -- Crohn Job to calculate daily active users for the past day
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async recordDailyActiveUsers() {
     this.logger.log('Running daily active user aggregation job...');
     await this.calculateAndStoreDailyActiveUsers(); // no params → uses yesterday by default

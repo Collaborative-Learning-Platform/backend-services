@@ -7,16 +7,10 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: process.cwd() + '/env/.user-ms.env' });
 dotenv.config({ path: process.cwd() + '/env/.common.env' });
 
-// console.log('Looking for env file at:', process.cwd() + '/env/.user-ms.env');
 
-// console.log('DB_HOST:', process.env.DB_HOST);
-// console.log('DB_PORT:', process.env.DB_PORT);
-// console.log('DB_NAME:', process.env.DB_NAME);
 dotenv.config({ path: process.cwd() + '/env/.common.env' });
 
-// console.log('DB_HOST:', process.env.DB_HOST);
-// console.log('DB_PORT:', process.env.DB_PORT);
-// console.log('DB_NAME:', process.env.DB_NAME);
+
 
 @Module({
   imports: [
@@ -40,14 +34,5 @@ dotenv.config({ path: process.cwd() + '/env/.common.env' });
   providers: [UserService],
 })
 export class UserModule {
-  // constructor() {
-  //   // Debug: Log environment variables
-  //   console.log('Database Config:', {
-  //     host: process.env.DB_HOST,
-  //     port: process.env.DB_PORT,
-  //     username: process.env.DB_USERNAME,
-  //     database: process.env.DB_NAME,
-  //     password: process.env.DB_PASSWORD ? '***masked***' : 'undefined',
-  //   });
-  // }
+
 }

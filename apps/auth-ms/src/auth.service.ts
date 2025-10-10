@@ -30,7 +30,6 @@ export class AuthService {
   ) {}
 
   async login(credentials: LoginDto) {
-    // console.log(credentials)
     const user = await this.userRepository.findOne({
       where: { email: credentials.email },
     });
@@ -59,6 +58,7 @@ export class AuthService {
     }
 
     const tokens = await this.generateToken(user.id);
+    console.log('Generated Tokens:', tokens);
 
     // Log user login via analytics-ms service
     try {
@@ -336,39 +336,6 @@ export class AuthService {
       existingUsers: existingUsers,
       successfulUsers: successfulUsers,
     };
-
-    // // Save to DB with error handling
-    // try {
-    //   savedUsers = await this.userRepository.save(preparedUsers);
-    //   console.log('Saved Users:', savedUsers);
-    // } catch (error) {
-    //   console.error(' Error saving users:', error);
-    //   return {
-    //     success: false,
-    //     message: 'Failed to save users',
-    //     error: error.message,
-    //   };
-    // }
-
-    // try {
-    //   savedUsers.forEach((u) => {
-    //     const { subject, html } = welcomeTemplate(u.name, u.email, 'Abcd1234');
-    //     this.notificationClient.emit('notify', {
-    //       email: u.email,
-    //       subject,
-    //       html,
-    //     });
-    //   });
-    // } catch (err) {
-    //   console.log(err);
-    // }
-
-    // // Always return success if users were created
-    // return {
-    //   success: true,
-    //   message: 'Bulk registration successful. Emails have been sent.',
-    //   count: preparedUsers.length,
-    // };
   }
 
   //supportive functions for token generation and storage
