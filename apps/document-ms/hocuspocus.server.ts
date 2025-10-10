@@ -36,7 +36,7 @@ export async function setUpDatabase() {
   }
 }
 
-async function bootstrap() {
+export async function startHocuspocusCollabServer() {
   await setUpDatabase();
 
   const server = new Server({
@@ -116,6 +116,6 @@ async function bootstrap() {
   console.log(`Hocuspocus server running on ws://localhost:1234`);
 }
 
-bootstrap().catch((err) => {
-  console.error('Failed to start Hocuspocus server:', err);
-});
+// bootstrap().catch((err) => {
+//   console.error('Failed to start Hocuspocus server:', err);
+// });

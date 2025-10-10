@@ -19,7 +19,6 @@ export enum ActivityCategory {
 export enum ActivityType {
   // Common
   LOGIN = 'LOGIN',
-  LOGOUT = 'LOGOUT',
   DOWNLOADED_RESOURCE = 'DOWNLOADED_RESOURCE',
   UPLOADED_RESOURCE = 'UPLOADED_RESOURCE',
   GENERATED_FLASHCARD = 'GENERATED_FLASHCARD',
@@ -55,12 +54,11 @@ export enum ActivityType {
 export const ActivityMessageMap: Record<ActivityType, string> = {
   // Common
   [ActivityType.LOGIN]: 'logged in',
-  [ActivityType.LOGOUT]: 'logged out',
   [ActivityType.DOWNLOADED_RESOURCE]: 'downloaded  resource',
   [ActivityType.UPLOADED_RESOURCE]: 'uploaded  resource',
   [ActivityType.GENERATED_FLASHCARD]: 'generated flashcards',
-  [ActivityType.JOINED_WHITEBOARD]: 'joined  whiteboard session',
-  [ActivityType.JOINED_DOCUMENT]: 'joined  collaborative document',
+  [ActivityType.JOINED_WHITEBOARD]: 'collaborated on whiteboard',
+  [ActivityType.JOINED_DOCUMENT]: 'collaborated on Document',
   [ActivityType.ADDED_TO_GROUP]: 'was added to  group',
   [ActivityType.ADDED_TO_WORKSPACE]: 'was added to  workspace',
   [ActivityType.CREATED_GROUP]: 'created  new group',
@@ -69,7 +67,7 @@ export const ActivityMessageMap: Record<ActivityType, string> = {
   [ActivityType.VIEWED_RESOURCE]: 'viewed  resource',
   [ActivityType.VIEWED_CHAT]: 'viewed  chat',
 
-  // Student-side
+  // Student-side(user)
   [ActivityType.STARTED_QUIZ]: 'started quiz',
   [ActivityType.SUBMITTED_QUIZ]: 'submitted quiz',
   [ActivityType.JOINED_STUDY_GROUP]: 'joined study group',
@@ -89,9 +87,8 @@ export const ActivityMessageMap: Record<ActivityType, string> = {
 };
 
 export const RoleActivityMap = {
-  student: [
+  user: [
     ActivityType.LOGIN,
-    ActivityType.LOGOUT,
     ActivityType.DOWNLOADED_RESOURCE,
     ActivityType.UPLOADED_RESOURCE,
     ActivityType.GENERATED_FLASHCARD,
@@ -112,7 +109,6 @@ export const RoleActivityMap = {
   ],
   tutor: [
     ActivityType.LOGIN,
-    ActivityType.LOGOUT,
     ActivityType.UPLOADED_RESOURCE,
     ActivityType.DOWNLOADED_RESOURCE,
     ActivityType.GENERATED_FLASHCARD,
@@ -131,7 +127,6 @@ export const RoleActivityMap = {
   ],
   admin: [
     ActivityType.LOGIN,
-    ActivityType.LOGOUT,
     ActivityType.CREATED_WORKSPACE,
     ActivityType.DELETED_GROUP,
     ActivityType.DELETED_WORKSPACE,
@@ -148,7 +143,7 @@ export class UserActivityLog {
   user_id: string;
 
   @Column({ type: 'varchar', length: 20 })
-  role: 'STUDENT' | 'TUTOR' | 'ADMIN';
+  role: 'USER' | 'TUTOR' | 'ADMIN';
 
   @Column({ type: 'varchar', length: 60 })
   category: ActivityCategory;

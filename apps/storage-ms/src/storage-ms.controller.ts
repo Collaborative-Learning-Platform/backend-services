@@ -10,22 +10,34 @@ export class StorageMsController {
   // Generate upload URL
   @MessagePattern({ cmd: 'generate-upload-url' })
   async getUploadUrl(@Payload() data: GetUploadUrlDto) {
+    console.log(`Generating url for: ${data.fileName}`);
     return this.storageService.generateUploadUrl(data);
   }
 
   // Generate download URL
   @MessagePattern({ cmd: 'generate-download-url' })
-  async getDownloadUrl(@Payload() data: { resourceId: string }) {
-    return this.storageService.generateDownloadUrl(data.resourceId);
+  async getDownloadUrl(
+    @Payload() data: { resourceId: string; userId: string },
+  ) {
+    console.log(`Generating url for: ${data.resourceId}`);
+    return this.storageService.generateDownloadUrl(
+      data.resourceId,
+      data.userId,
+    );
   }
 
-  @MessagePattern({cmd:'generate-profile-pic-upload-url'})
-  async getProfilePicUploadUrl(@Payload() data: { userId: string, fileName: string, contentType: string }) {
-    return this.storageService.generateProfilePicUploadUrl(data.userId, data.fileName, data.contentType);
+  @MessagePattern({ cmd: 'generate-profile-pic-upload-url' })
+  async getProfilePicUploadUrl(
+    @Payload() data: { userId: string; fileName: string; contentType: string },
+  ) {
+    return this.storageService.generateProfilePicUploadUrl(
+      data.userId,
+      data.fileName,
+      data.contentType,
+    );
   }
 
-
-  @MessagePattern({cmd:'generate-profile-pic-download-url'})
+  @MessagePattern({ cmd: 'generate-profile-pic-download-url' })
   async getProfilePicDownloadUrl(@Payload() data: { userId: string }) {
     return this.storageService.generateProfilePicDownloadUrl(data.userId);
   }
@@ -49,7 +61,7 @@ export class StorageMsController {
   }
 
   //delete all resources inside a group
-  @MessagePattern({ cmd: 'clear_group_storage'})
+  @MessagePattern({ cmd: 'clear_group_storage' })
   async deleteResourcesByGroupId(@Payload() data: { groupId: string }) {
     return this.storageService.deleteResourcesByGroupId(data.groupId);
   }

@@ -22,6 +22,14 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
           port: 4000,
         },
       },
+      {
+        name: 'ANALYTICS_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4010,
+        },
+      },
     ]),
     TypeOrmModule.forRoot({
       type: 'postgres',
@@ -33,12 +41,12 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
       entities: [Resource, ResourceTag],
       synchronize: true,
       ssl: {
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: false,
+      },
     }),
     TypeOrmModule.forFeature([Resource, ResourceTag]),
   ],
   controllers: [StorageMsController],
-  providers: [StorageMsService,S3Provider],
+  providers: [StorageMsService, S3Provider],
 })
 export class StorageMsModule {}

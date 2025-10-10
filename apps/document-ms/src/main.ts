@@ -3,6 +3,7 @@ import { DocumentMsModule } from './document-ms.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './filters/all-exception.filter';
+import { startHocuspocusCollabServer } from '../hocuspocus.server';
 
 const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
 
@@ -25,7 +26,12 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new AllExceptionsFilter());
-  await app.listen();
-  console.log('Document microservice is running');
+
+  // Start both servers concurrently
+  await Promise.all([app.listen(), startHocuspocusCollabServer()]);
+
+  console.log('Document microservice is running on TCP port 4006');
+  console.log('Hocuspocus WebSocket server is running on port 1234');
 }
+
 bootstrap();
