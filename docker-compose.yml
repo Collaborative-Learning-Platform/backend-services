@@ -1,108 +1,5 @@
-# version: '3.8'
-
-# services:
-#   # Database
-#   postgres:
-#     image: postgres:15-alpine
-#     container_name: backend-postgres
-#     environment:
-#       POSTGRES_USER: user
-#       POSTGRES_PASSWORD: password
-#       POSTGRES_DB: backend_services
-#     ports:
-#       - "5432:5432"
-#     volumes:
-#       - postgres_data:/var/lib/postgresql/data
-#       - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
-#     networks:
-#       - backend-network
-
-#   # Redis for caching and sessions
-#   redis:
-#     image: redis:7-alpine
-#     container_name: backend-redis
-#     ports:
-#       - "6379:6379"
-#     volumes:
-#       - redis_data:/data
-#     networks:
-#       - backend-network
-
-#   # Gateway Service
-#   gateway:
-#     build:
-#       context: .
-#       dockerfile: docker/gateway.Dockerfile
-#     container_name: backend-gateway
-#     ports:
-#       - "3000:3000"
-#     env_file:
-#       - ./env/.gateway.env
-#     depends_on:
-#       - postgres
-#       - redis
-#       - auth-ms
-#       - user-ms
-#     volumes:
-#       - ./apps/gateway:/app/apps/gateway
-#       - ./libs:/app/libs
-#       - /app/node_modules
-#     networks:
-#       - backend-network
-#     restart: unless-stopped
-
-#   # User Microservice
-#   user-ms:
-#     build:
-#       context: .
-#       dockerfile: docker/user-ms.Dockerfile
-#     container_name: backend-user-ms
-#     ports:
-#       - "3001:3001"
-#     env_file:
-#       - ./env/.user-ms.env
-#     depends_on:
-#       - postgres
-#       - redis
-#     volumes:
-#       - ./apps/user-ms:/app/apps/user-ms
-#       - ./libs:/app/libs
-#       - /app/node_modules
-#     networks:
-#       - backend-network
-#     restart: unless-stopped
-
-#   # Auth Microservice
-#   auth-ms:
-#     build:
-#       context: .
-#       dockerfile: docker/auth-ms.Dockerfile
-#     container_name: backend-auth-ms
-#     ports:
-#       - "3002:3002"
-#     env_file:
-#       - ./env/.auth-ms.env
-#     depends_on:
-#       - postgres
-#       - redis
-#     volumes:
-#       - ./apps/auth-ms:/app/apps/auth-ms
-#       - ./libs:/app/libs
-#       - /app/node_modules
-#     networks:
-#       - backend-network
-#     restart: unless-stopped
-
-# volumes:
-#   postgres_data:
-#   redis_data:
-
-# networks:
-#   backend-network:
-#     driver: bridge
-version: '3.8'
-
 services:
+  # API Gateway - Entry point for all requests
   gateway:
     build:
       context: .
@@ -110,25 +7,154 @@ services:
     ports:
       - '3000:3000'
     env_file:
+      - ./env/.common.env
       - ./env/.gateway.env
     depends_on:
       - user-ms
       - auth-ms
+      - notification-ms
+      - workspace-ms
+      - chat-ms
+      - quiz-ms
+      - document-ms
+      - storage-ms
+      - ai-ms
+      - whiteboard-ms
+      - analytics-ms
+    restart: unless-stopped
 
-  user-ms:
-    build:
-      context: .
-      dockerfile: docker/user-ms.Dockerfile
-    env_file:
-      - ./env/.user-ms.env
-    expose:
-      - '4001'
-
+  # Authentication Service
   auth-ms:
     build:
       context: .
       dockerfile: docker/auth-ms.Dockerfile
     env_file:
+      - ./env/.common.env
       - ./env/.auth-ms.env
     expose:
       - '4000'
+    restart: unless-stopped
+
+  # User Management Service
+  user-ms:
+    build:
+      context: .
+      dockerfile: docker/user-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+      - ./env/.user-ms.env
+    expose:
+      - '4001'
+    restart: unless-stopped
+
+  # Notification Service
+  notification-ms:
+    build:
+      context: .
+      dockerfile: docker/notification-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+      - ./env/.notification-ms.env
+    expose:
+      - '4002'
+    restart: unless-stopped
+
+  # Workspace Management Service
+  workspace-ms:
+    build:
+      context: .
+      dockerfile: docker/workspace-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+      - ./env/.workspace-ms.env
+    expose:
+      - '4003'
+    restart: unless-stopped
+
+  # Quiz Service
+  quiz-ms:
+    build:
+      context: .
+      dockerfile: docker/quiz-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+      - ./env/.quiz-ms.env
+    expose:
+      - '4004'
+    restart: unless-stopped
+
+  # Chat Service
+  chat-ms:
+    build:
+      context: .
+      dockerfile: docker/chat-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+      - ./env/.chat-ms.env
+    expose:
+      - '4005'
+    restart: unless-stopped
+
+  # Document Management Service (with Hocuspocus)
+  document-ms:
+    build:
+      context: .
+      dockerfile: docker/document-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+      - ./env/.document-ms.env
+    expose:
+      - '4006'
+      - '1234'  # Hocuspocus server port
+    restart: unless-stopped
+
+  # File Storage Service
+  storage-ms:
+    build:
+      context: .
+      dockerfile: docker/storage-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+      - ./env/.storage-ms.env
+    expose:
+      - '4007'
+    restart: unless-stopped
+
+  # AI Service
+  ai-ms:
+    build:
+      context: .
+      dockerfile: docker/ai-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+      - ./env/.ai-ms.env
+    expose:
+      - '4008'
+    restart: unless-stopped
+
+  # Whiteboard Service
+  whiteboard-ms:
+    build:
+      context: .
+      dockerfile: docker/whiteboard-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+      - ./env/.whiteboard-ms.env
+    ports:
+      - '8080:8080'  # Expose WebSocket port for external access  
+    expose:
+      - '4009'  # TCP port
+      
+    restart: unless-stopped
+
+  # Analytics Service
+  analytics-ms:
+    build:
+      context: .
+      dockerfile: docker/analytics-ms.Dockerfile
+    env_file:
+      - ./env/.common.env
+      - ./env/.analytics-ms.env
+    expose:
+      - '4010'  # Port for analytics service
+    restart: unless-stopped

@@ -10,6 +10,24 @@
   "monorepo": true,
   "root": "apps/backend-services",
   "projects": {
+    "ai-ms": {
+      "type": "application",
+      "root": "apps/ai-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/ai-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/ai-ms/tsconfig.app.json"
+      }
+    },
+    "analytics-ms": {
+      "type": "application",
+      "root": "apps/analytics-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/analytics-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/analytics-ms/tsconfig.app.json"
+      }
+    },
     "auth-ms": {
       "type": "application",
       "root": "apps/auth-ms",
@@ -17,6 +35,24 @@
       "sourceRoot": "apps/auth-ms/src",
       "compilerOptions": {
         "tsConfigPath": "apps/auth-ms/tsconfig.app.json"
+      }
+    },
+    "chat-ms": {
+      "type": "application",
+      "root": "apps/chat-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/chat-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/chat-ms/tsconfig.app.json"
+      }
+    },
+    "document-ms": {
+      "type": "application",
+      "root": "apps/document-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/document-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/document-ms/tsconfig.app.json"
       }
     },
     "gateway": {
@@ -28,6 +64,40 @@
         "tsConfigPath": "apps/gateway/tsconfig.app.json"
       }
     },
+    "notification-ms": {
+      "type": "application",
+      "root": "apps/notification-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/notification-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/notification-ms/tsconfig.app.json",
+        "assets": [
+          {
+            "include": "src/templates/**/*",
+            "outDir": "dist/apps/notification-ms/templates"
+          }
+        ],
+        "watchAssets": true
+      }
+    },
+    "quiz-ms": {
+      "type": "application",
+      "root": "apps/quiz-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/quiz-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/quiz-ms/tsconfig.app.json"
+      }
+    },
+    "storage-ms": {
+      "type": "application",
+      "root": "apps/storage-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/storage-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/storage-ms/tsconfig.app.json"
+      }
+    },
     "user-ms": {
       "type": "application",
       "root": "apps/user-ms",
@@ -35,6 +105,24 @@
       "sourceRoot": "apps/user-ms/src",
       "compilerOptions": {
         "tsConfigPath": "apps/user-ms/tsconfig.app.json"
+      }
+    },
+    "whiteboard-ms": {
+      "type": "application",
+      "root": "apps/whiteboard-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/whiteboard-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/whiteboard-ms/tsconfig.app.json"
+      }
+    },
+    "workspace-ms": {
+      "type": "application",
+      "root": "apps/workspace-ms",
+      "entryFile": "main",
+      "sourceRoot": "apps/workspace-ms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/workspace-ms/tsconfig.app.json"
       }
     }
   }
