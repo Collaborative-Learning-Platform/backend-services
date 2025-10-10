@@ -20,7 +20,7 @@ async function bootstrap() {
 
   app.useGlobalFilters(new RpcExceptionFilter())
 
-  await app.listen(3000);
+  await app.listen(3000,'0.0.0.0');
   console.log('API Gateway is running at http://localhost:3000');
 }
 bootstrap();
