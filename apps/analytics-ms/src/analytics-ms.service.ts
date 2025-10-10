@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   ActivityCategory,
   ActivityMessageMap,
   ActivityType,
   UserActivityLog,
+  RoleActivityMap,
 } from './entity/user-activity-log.entity';
 import { UserActivitySession } from './entity/user-activity-session.entity';
 import { DocumentActivitySession } from './entity/document-activity-session.entity';
@@ -13,6 +14,8 @@ import { UserStreak } from './entity/user-streak.entity';
 import { startOfDay, subDays, isSameDay, endOfDay, format } from 'date-fns';
 import { DailyActiveUsers } from './entity/daily-active-users.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { ClientProxy } from '@nestjs/microservices';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class AnalyticsMsService {
@@ -33,6 +36,9 @@ export class AnalyticsMsService {
 
     @InjectRepository(DailyActiveUsers)
     private readonly dailyActiveUsersRepo: Repository<DailyActiveUsers>,
+
+    @Inject('AUTH_SERVICE')
+    private readonly authClient: ClientProxy,
   ) {}
 
   // =============================================
@@ -41,25 +47,58 @@ export class AnalyticsMsService {
 
   async logUserActivity(payload: {
     user_id: string;
-    role: 'STUDENT' | 'TUTOR' | 'ADMIN';
     category: ActivityCategory;
     activity_type: ActivityType;
     description?: string;
     metadata?: Record<string, any>;
   }) {
     try {
-      const { user_id, role, category, activity_type, description, metadata } =
+      const { user_id, category, activity_type, description, metadata } =
         payload;
+
+      // Get user role from auth service
+      const userResponse = await lastValueFrom(
+        this.authClient.send({ cmd: 'auth_get_user' }, { userId: user_id }),
+      );
+
+      if (!userResponse || !userResponse.success) {
+        this.logger.error(
+          `Failed to get user role for user ${user_id}`,
+          userResponse,
+        );
+        return {
+          success: false,
+          message: 'Failed to get user role',
+          status: 400,
+        };
+      }
+
+      const role = userResponse.user.role;
+
+      // Check if the activity type is allowed for this role
+      const roleKey = role.toLowerCase() as keyof typeof RoleActivityMap;
+      const allowedActivities = RoleActivityMap[roleKey];
+
+      if (
+        !allowedActivities ||
+        !(allowedActivities as readonly ActivityType[]).includes(activity_type)
+      ) {
+        this.logger.warn(
+          `Activity type ${activity_type} not allowed for role ${role} (user: ${user_id})`,
+        );
+        return {
+          success: false,
+          message: `Activity type ${activity_type} not allowed for role ${role}`,
+          status: 403,
+        };
+      }
 
       const log = this.userActivityRepo.create({
         user_id,
         role,
         category,
         activity_type,
-        description:
-          description ||
-          ActivityMessageMap[activity_type] ||
-          'Performed an activity',
+        description: description || ActivityMessageMap[activity_type],
         metadata,
       });
 

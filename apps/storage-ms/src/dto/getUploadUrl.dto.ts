@@ -1,4 +1,4 @@
- import { IsString, IsArray, IsNumber } from 'class-validator';
+import { IsString, IsArray, IsNumber, IsOptional } from 'class-validator';
 
 export class GetUploadUrlDto {
   @IsString()
@@ -16,12 +16,15 @@ export class GetUploadUrlDto {
   @IsArray()
   tags: string[];
 
+  @IsOptional()
   @IsString()
   description?: string;
 
+  @IsOptional()
   @IsNumber()
   fileSize?: number;
 
+  @IsOptional()
   @IsNumber()
   estimatedCompletionTime?: number;
 }

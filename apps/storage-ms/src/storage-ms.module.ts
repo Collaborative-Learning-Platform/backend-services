@@ -21,6 +21,14 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
           port: 4000,
         },
       },
+      {
+        name: 'ANALYTICS_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4010,
+        },
+      },
     ]),
     TypeOrmModule.forRoot({
       type: 'postgres',
@@ -32,12 +40,12 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
       entities: [Resource, ResourceTag],
       synchronize: true,
       ssl: {
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: false,
+      },
     }),
     TypeOrmModule.forFeature([Resource, ResourceTag]),
   ],
   controllers: [StorageMsController],
-  providers: [StorageMsService,S3Provider],
+  providers: [StorageMsService, S3Provider],
 })
 export class StorageMsModule {}

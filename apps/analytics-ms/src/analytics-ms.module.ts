@@ -10,9 +10,20 @@ import { DailyActiveUsers } from './entity/daily-active-users.entity';
 import { DocumentActivitySession } from './entity/document-activity-session.entity';
 import { UserStreak } from './entity/user-streak.entity';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
+    ClientsModule.register([
+      {
+        name: 'AUTH_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 4000,
+        },
+      },
+    ]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,

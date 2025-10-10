@@ -21,7 +21,7 @@ export class AnalyticsMsController {
     @Payload()
     payload: {
       user_id: string;
-      role: 'STUDENT' | 'TUTOR' | 'ADMIN';
+      role: string;
       category: ActivityCategory;
       activity_type: ActivityType;
       description?: string;

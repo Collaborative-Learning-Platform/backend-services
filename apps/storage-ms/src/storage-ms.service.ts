@@ -1,5 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,12 +21,22 @@ export class StorageMsService {
   constructor(
     @Inject('S3_CLIENT') private readonly s3: S3Client,
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
+    @Inject('ANALYTICS_SERVICE') private readonly analyticsClient: ClientProxy,
     @InjectRepository(Resource) private resourceRepo: Repository<Resource>,
     @InjectRepository(ResourceTag) private tagRepo: Repository<ResourceTag>,
   ) {}
 
   async generateUploadUrl(data: GetUploadUrlDto) {
-    const { groupId, userId, fileName, contentType, tags, description, fileSize, estimatedCompletionTime } = data;
+    const {
+      groupId,
+      userId,
+      fileName,
+      contentType,
+      tags,
+      description,
+      fileSize,
+      estimatedCompletionTime,
+    } = data;
     const resourceId = uuid();
     const key = `groups/${groupId}/resources/${resourceId}-${fileName}`;
 
@@ -39,7 +54,9 @@ export class StorageMsService {
     await this.resourceRepo.save(resource);
 
     if (tags?.length > 0) {
-      const tagEntities = tags.map(t => this.tagRepo.create({ tag: t, resourceId }));
+      const tagEntities = tags.map((t) =>
+        this.tagRepo.create({ tag: t, resourceId }),
+      );
       await this.tagRepo.save(tagEntities);
     }
 
@@ -50,11 +67,29 @@ export class StorageMsService {
     });
 
     const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
-    console.log(uploadUrl)
+
+    // Send a message to analytics microservice to log activity
+    await lastValueFrom(
+      this.analyticsClient.send(
+        { cmd: 'log_user_activity' },
+        {
+          user_id: userId,
+          category: 'RESOURCE',
+          activity_type: 'UPLOADED_RESOURCE',
+          metadata: {
+            resourceId: resource.resourceId,
+            fileName: resource.fileName,
+            fileSize: resource.size,
+            contentType: resource.contentType,
+          },
+        },
+      ),
+    );
+    console.log(uploadUrl);
     return { uploadUrl, resourceId };
   }
 
-  async generateDownloadUrl(resourceId: string) {
+  async generateDownloadUrl(resourceId: string, userId: string) {
     const resource = await this.resourceRepo.findOne({ where: { resourceId } });
     if (!resource) throw new Error('Resource not found');
 
@@ -63,11 +98,36 @@ export class StorageMsService {
       Key: resource.s3Key,
     });
 
-    const downloadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
+    const downloadUrl = await getSignedUrl(this.s3, command, {
+      expiresIn: 300,
+    });
+
+    // Send a message to analytics microservice to log activity
+    await lastValueFrom(
+      this.analyticsClient.send(
+        { cmd: 'log_user_activity' },
+        {
+          user_id: userId,
+          category: 'RESOURCE',
+          activity_type: 'DOWNLOADED_RESOURCE',
+          metadata: {
+            resourceId: resource.resourceId,
+            fileName: resource.fileName,
+            fileSize: resource.size,
+            contentType: resource.contentType,
+          },
+        },
+      ),
+    );
+
     return { downloadUrl };
   }
 
-  async generateProfilePicUploadUrl(userId: string, fileName: string, contentType: string) {
+  async generateProfilePicUploadUrl(
+    userId: string,
+    fileName: string,
+    contentType: string,
+  ) {
     const key = `users/${userId}/profile-pics/${uuid()}-${fileName}`;
 
     try {
@@ -77,10 +137,15 @@ export class StorageMsService {
         ContentType: contentType,
       });
 
-      const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
+      const uploadUrl = await getSignedUrl(this.s3, command, {
+        expiresIn: 300,
+      });
 
       const result = await lastValueFrom(
-        this.authClient.send({ cmd: 'auth_store_profile_pic_url' }, { userId, profilePicUrl: key })
+        this.authClient.send(
+          { cmd: 'auth_store_profile_pic_url' },
+          { userId, profilePicUrl: key },
+        ),
       );
 
       if (!result?.success) {
@@ -88,7 +153,6 @@ export class StorageMsService {
       }
 
       return { uploadUrl, key, success: true };
-
     } catch (error) {
       console.error('Error generating profile pic upload URL:', error);
       return { success: false, message: error.message };
@@ -98,10 +162,13 @@ export class StorageMsService {
   async generateProfilePicDownloadUrl(userId: string) {
     try {
       const result = await lastValueFrom(
-        this.authClient.send({ cmd: 'get_profile_picture_url' }, { userId })
+        this.authClient.send({ cmd: 'get_profile_picture_url' }, { userId }),
       );
       if (!result?.success) {
-        return { success: false, message: 'Failed to fetch user from auth service' };
+        return {
+          success: false,
+          message: 'Failed to fetch user from auth service',
+        };
       }
 
       const profilePicUrl = result.profilePictureUrl;
@@ -110,8 +177,10 @@ export class StorageMsService {
         Key: profilePicUrl,
       });
 
-      const downloadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
-      return {success:true, downloadUrl };
+      const downloadUrl = await getSignedUrl(this.s3, command, {
+        expiresIn: 300,
+      });
+      return { success: true, downloadUrl };
     } catch (error) {
       console.error('Error generating profile pic download URL:', error);
       return { success: false, message: error.message };
@@ -119,7 +188,7 @@ export class StorageMsService {
   }
 
   async listGroupResources(groupId: string) {
-    try{
+    try {
       const result = await this.resourceRepo.find({
         where: { groupId },
         relations: ['tags'],
@@ -128,40 +197,37 @@ export class StorageMsService {
         success: true,
         data: result,
         message: 'Resources fetched successfully',
-      }
-    }catch (error) {
+      };
+    } catch (error) {
       console.error('Error listing group resources:', error);
       return { success: false, message: 'Error listing group resources' };
     }
-
-    
   }
 
   async deleteResource(resourceId: string) {
     const resource = await this.resourceRepo.findOne({ where: { resourceId } });
-    
-    if (!resource) 
-      return { success: false, message: 'Resource not found' };
 
-    try{
-      await this.s3.send(new DeleteObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: resource.s3Key,
-      }));
-      
-    }catch (error) {
+    if (!resource) return { success: false, message: 'Resource not found' };
+
+    try {
+      await this.s3.send(
+        new DeleteObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Key: resource.s3Key,
+        }),
+      );
+    } catch (error) {
       console.error('Error deleting S3 object:', error);
       return { success: false, message: 'Error deleting S3 object' };
     }
 
     await this.resourceRepo.remove(resource);
-    
+
     return { success: true, message: 'Resource deleted successfully' };
   }
 
   async getResourcesByGroupIds(groups: string[]) {
-    try{
-      
+    try {
       if (!groups || !Array.isArray(groups) || groups.length === 0) {
         return {
           success: true,
@@ -175,7 +241,7 @@ export class StorageMsService {
         relations: ['tags'],
       });
 
-      const filteredResources = resources.map(r => {
+      const filteredResources = resources.map((r) => {
         return {
           resourceId: r.resourceId,
           groupId: r.groupId,
@@ -183,7 +249,7 @@ export class StorageMsService {
           contentType: r.contentType,
           description: r.description,
           estimatedCompletionTime: r.estimatedCompletionTime,
-          tags: r.tags
+          tags: r.tags,
         };
       });
       return {
@@ -191,34 +257,44 @@ export class StorageMsService {
         data: filteredResources,
         message: 'Resources fetched successfully',
       };
-    }catch (error) {
+    } catch (error) {
       console.error('Error fetching resources by group IDs:', error);
-      return { success: false, message: 'Error fetching resources by group IDs' };
+      return {
+        success: false,
+        message: 'Error fetching resources by group IDs',
+      };
     }
   }
 
   async deleteResourcesByGroupId(groupId: string) {
-    try{
+    try {
       const resources = await this.resourceRepo.find({ where: { groupId } });
       if (resources.length === 0) {
-        return { success: true, message: 'No resources to delete for this group' };
+        return {
+          success: true,
+          message: 'No resources to delete for this group',
+        };
       }
 
-      const deletePromises = resources.map(resource => {
-        return this.s3.send(new DeleteObjectCommand({
-          Bucket: process.env.AWS_S3_BUCKET,
-          Key: resource.s3Key,
-        }));
+      const deletePromises = resources.map((resource) => {
+        return this.s3.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET,
+            Key: resource.s3Key,
+          }),
+        );
       });
 
       await Promise.all(deletePromises);
       await this.resourceRepo.remove(resources);
 
       return { success: true, message: 'Resources deleted successfully' };
-    }catch (error) {
+    } catch (error) {
       console.error('Error deleting resources by group ID:', error);
-      return { success: false, message: 'Error deleting resources by group ID' };
+      return {
+        success: false,
+        message: 'Error deleting resources by group ID',
+      };
     }
   }
-
 }
