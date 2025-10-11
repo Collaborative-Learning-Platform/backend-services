@@ -172,7 +172,7 @@ export class AuthController {
   private async setAuthCookies(res: Response, access_token: string, refresh_token: string) {
   const cookieOptions = {
     httpOnly: true,
-    secure: true,         
+    secure: false,         
     sameSite: 'none' as const, 
     path: '/',
   };
