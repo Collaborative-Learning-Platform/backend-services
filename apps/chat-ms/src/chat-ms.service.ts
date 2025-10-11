@@ -1,15 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChatMessage } from './entity/chat-message.entity';
 import { CreateMessageDto } from './dto/createMessage.dto';
 import { MessageResponseDto } from './dto/messageResponse.dto';
+import { ClientProxy } from '@nestjs/microservices';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class ChatMsService {
   constructor(
     @InjectRepository(ChatMessage)
     private readonly messageRepo: Repository<ChatMessage>,
+    @Inject('ANALYTICS_SERVICE') private readonly analyticsClient: ClientProxy,
   ) {}
 
   async createMessage(dto: CreateMessageDto) {
@@ -24,16 +27,33 @@ export class ChatMsService {
       createdAt: saved.createdAt,
     };
 
+    //Add logging to the analytics service
+    await lastValueFrom(
+      this.analyticsClient.send(
+        { cmd: 'log_user_activity' },
+        {
+          user_id: saved.sender,
+          category: 'COMMUNICATION',
+          activity_type: 'POSTED_MESSAGE',
+          metadata: {
+            chatId: saved.chatId,
+            roomId: saved.roomId,
+            createdAt: response.createdAt,
+          },
+        },
+      ),
+    );
+
     return response;
   }
 
   async getMessages(roomId: string) {
     const messages = await this.messageRepo.find({
-    where: { roomId },
-    order: { createdAt: 'ASC' },
+      where: { roomId },
+      order: { createdAt: 'ASC' },
     });
 
-    return messages.map(m => ({
+    return messages.map((m) => ({
       chatId: m.chatId,
       sender: m.sender,
       roomId: m.roomId,

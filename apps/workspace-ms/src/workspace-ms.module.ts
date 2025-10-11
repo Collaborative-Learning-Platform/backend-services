@@ -5,12 +5,11 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: process.cwd() + '/env/.common.env' });
 import { ClientsModule } from '@nestjs/microservices';
 import { Transport } from '@nestjs/microservices';
-import {TypeOrmModule} from '@nestjs/typeorm';
-import {Workspace} from './entity/workspace.entity';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Workspace } from './entity/workspace.entity';
 import { UserWorkspace } from './entity/user-workspace.entity';
 import { Group } from './entity/group.entity';
 import { UserGroup } from './entity/user-group.entity';
-
 
 const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
 
@@ -50,7 +49,7 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
         },
       },
       {
-        name:'DOCUMENT_SERVICE',
+        name: 'DOCUMENT_SERVICE',
         transport: Transport.TCP,
         options: {
           host: isDocker ? 'document-ms' : '127.0.0.1',
@@ -58,35 +57,38 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
         },
       },
       {
-        name :'CHAT_SERVICE',
+        name: 'CHAT_SERVICE',
         transport: Transport.TCP,
         options: {
           host: isDocker ? 'chat-ms' : '127.0.0.1',
           port: 4005,
         },
       },
+      {
+        name: 'ANALYTICS_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: isDocker ? 'analytics-ms' : '127.0.0.1',
+          port: 4010,
+        },
+      },
     ]),
     TypeOrmModule.forRoot({
-          type: 'postgres',
-          host: process.env.DB_HOST,
-          port: Number(process.env.DB_PORT),
-          username: process.env.DB_USERNAME,
-          password: process.env.DB_PASSWORD,
-          database: process.env.DB_NAME,
-          entities: [Workspace, UserWorkspace, Group, UserGroup],
-          synchronize: true,
-          ssl: {
-            rejectUnauthorized: false,
-          },
-        }),
-    TypeOrmModule.forFeature([
-      Workspace,
-      UserWorkspace,
-      Group,
-      UserGroup,
-    ]),
+      type: 'postgres',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      entities: [Workspace, UserWorkspace, Group, UserGroup],
+      synchronize: true,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    }),
+    TypeOrmModule.forFeature([Workspace, UserWorkspace, Group, UserGroup]),
   ],
-  
+
   controllers: [WorkspaceMsController],
   providers: [WorkspaceMsService],
 })

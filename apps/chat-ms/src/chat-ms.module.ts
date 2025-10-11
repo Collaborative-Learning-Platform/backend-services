@@ -4,23 +4,36 @@ import { ChatMsService } from './chat-ms.service';
 import * as dotenv from 'dotenv';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChatMessage } from './entity/chat-message.entity';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 dotenv.config({ path: process.cwd() + '/env/.common.env' });
+
+const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
 
 @Module({
   imports: [
-   TypeOrmModule.forRoot({
-             type: 'postgres',
-             host: process.env.DB_HOST,
-             port: Number(process.env.DB_PORT),
-             username: process.env.DB_USERNAME,
-             password: process.env.DB_PASSWORD,
-             database: process.env.DB_NAME,
-             entities: [ChatMessage],
-             synchronize: true,
-             ssl: {
-               rejectUnauthorized: false,
-             },
-           }),
+    ClientsModule.register([
+      {
+        name: 'ANALYTICS_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: isDocker ? 'analytics-ms' : '127.0.0.1',
+          port: 4010,
+        },
+      },
+    ]),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      entities: [ChatMessage],
+      synchronize: true,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    }),
     TypeOrmModule.forFeature([ChatMessage]),
   ],
   controllers: [ChatMsController],

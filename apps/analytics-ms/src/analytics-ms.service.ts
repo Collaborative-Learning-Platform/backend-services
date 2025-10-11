@@ -7,8 +7,6 @@ import {
   UserActivityLog,
   RoleActivityMap,
 } from './entity/user-activity-log.entity';
-import { UserActivitySession } from './entity/user-activity-session.entity';
-import { DocumentActivitySession } from './entity/document-activity-session.entity';
 import { Repository } from 'typeorm';
 import { UserStreak } from './entity/user-streak.entity';
 import { startOfDay, subDays, isSameDay, endOfDay, format } from 'date-fns';
@@ -24,12 +22,6 @@ export class AnalyticsMsService {
   constructor(
     @InjectRepository(UserActivityLog)
     private readonly userActivityRepo: Repository<UserActivityLog>,
-
-    @InjectRepository(UserActivitySession)
-    private readonly userSessionRepo: Repository<UserActivitySession>,
-
-    @InjectRepository(DocumentActivitySession)
-    private readonly documentSessionRepo: Repository<DocumentActivitySession>,
 
     @InjectRepository(UserStreak)
     private readonly userStreakRepo: Repository<UserStreak>,
@@ -121,30 +113,6 @@ export class AnalyticsMsService {
         }
       }
 
-      // Create a session entry for activities that require time tracking
-      const timedActivities: ActivityType[] = [
-        ActivityType.STARTED_QUIZ,
-        ActivityType.VIEWED_FLASHCARDS,
-        ActivityType.VIEWED_STUDY_PLAN,
-        ActivityType.VIEWED_RESOURCE,
-        ActivityType.VIEWED_CHAT,
-      ];
-
-      if (timedActivities.includes(activity_type)) {
-        const session = this.userSessionRepo.create({
-          user_id,
-          activity_log_id: saved.id,
-          started_at: new Date(), // Record when session begins
-          duration_seconds: 0, // Initially 0, can update when session ends
-        });
-
-        await this.userSessionRepo.save(session);
-
-        this.logger.debug(
-          `Activity started: ${activity_type} by ${role} (${user_id})`,
-        );
-      }
-
       this.logger.debug(
         `Activity logged: ${activity_type} by ${role} (${user_id})`,
       );
@@ -210,66 +178,6 @@ export class AnalyticsMsService {
   }
 
   // =============================================
-  // UPDATE SESSION ENDTIME
-  // =============================================
-
-  async updateSessionEndTime(sessionId: string) {
-    try {
-      // Fetch the session
-      const session = await this.userSessionRepo.findOne({
-        where: { id: sessionId },
-      });
-
-      if (!session) {
-        this.logger.warn(`Session not found: ${sessionId}`);
-        return {
-          success: false,
-          message: 'Session not found',
-          status: 404,
-        };
-      }
-
-      // Check if already ended
-      if (session.ended_at) {
-        this.logger.debug(`Session ${sessionId} already ended`);
-        return {
-          success: true,
-          message: 'Session already ended',
-        };
-      }
-
-      // Update end time and duration
-      const now = new Date();
-      session.ended_at = now;
-      session.duration_seconds = Math.floor(
-        (now.getTime() - session.started_at.getTime()) / 1000,
-      );
-
-      await this.userSessionRepo.save(session);
-
-      this.logger.debug(
-        `Session ${sessionId} ended. Duration: ${session.duration_seconds}s`,
-      );
-
-      return {
-        success: true,
-        message: 'Session ended successfully',
-        data: {
-          session_id: session.id,
-          duration_seconds: session.duration_seconds,
-        },
-      };
-    } catch (error) {
-      this.logger.error('Failed to update session end time', error.stack);
-      return {
-        success: false,
-        message: 'Error updating session end time',
-        status: 500,
-      };
-    }
-  }
-
-  // =============================================
   // UPDATE DAILY ACTIVE USERS
   // =============================================
 
@@ -323,7 +231,7 @@ export class AnalyticsMsService {
 
   // -- Crohn Job to calculate daily active users for the past day
 
-  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async recordDailyActiveUsers() {
     this.logger.log('Running daily active user aggregation job...');
     await this.calculateAndStoreDailyActiveUsers(); // no params → uses yesterday by default

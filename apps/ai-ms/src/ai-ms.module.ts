@@ -16,14 +16,14 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
   imports: [
     ClientsModule.register([
       {
-          name: 'WORKSPACE_SERVICE',
-          transport: Transport.TCP,
-          options: {
-            host: isDocker ? 'workspace-ms' : '127.0.0.1',
-            port: 4003,
-          },
+        name: 'WORKSPACE_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: isDocker ? 'workspace-ms' : '127.0.0.1',
+          port: 4003,
+        },
       },
-       {
+      {
         name: 'QUIZ_SERVICE',
         transport: Transport.TCP,
         options: {
@@ -39,28 +39,31 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
           port: 4007,
         },
       },
+      {
+        name: 'ANALYTICS_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: isDocker ? 'analytics-ms' : '127.0.0.1',
+          port: 4010,
+        },
+      },
     ]),
     TypeOrmModule.forRoot({
       type: 'postgres',
-            host: process.env.DB_HOST,
-            port: Number(process.env.DB_PORT),
-            username: process.env.DB_USERNAME,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME,
-            entities: [StudyPlan],
-            synchronize: true,
-            ssl: {
-              rejectUnauthorized: false,
-            },
-      }),
-      TypeOrmModule.forFeature([
-           StudyPlan
-      ]),
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      entities: [StudyPlan],
+      synchronize: true,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    }),
+    TypeOrmModule.forFeature([StudyPlan]),
   ],
   controllers: [AiMsController],
-  providers: [
-    AiMsService,
-    GeminiProvider
-  ],
+  providers: [AiMsService, GeminiProvider],
 })
 export class AiMsModule {}

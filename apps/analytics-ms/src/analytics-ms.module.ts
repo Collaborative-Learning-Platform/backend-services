@@ -5,9 +5,7 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: process.cwd() + '/env/.common.env' });
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserActivityLog } from './entity/user-activity-log.entity';
-import { UserActivitySession } from './entity/user-activity-session.entity';
 import { DailyActiveUsers } from './entity/daily-active-users.entity';
-import { DocumentActivitySession } from './entity/document-activity-session.entity';
 import { UserStreak } from './entity/user-streak.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ClientsModule, Transport } from '@nestjs/microservices';
@@ -31,25 +29,13 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [
-        UserActivityLog,
-        UserActivitySession,
-        DailyActiveUsers,
-        DocumentActivitySession,
-        UserStreak,
-      ],
+      entities: [UserActivityLog, DailyActiveUsers, UserStreak],
       synchronize: true,
       ssl: {
         rejectUnauthorized: false,
       },
     }),
-    TypeOrmModule.forFeature([
-      UserActivityLog,
-      UserActivitySession,
-      DailyActiveUsers,
-      DocumentActivitySession,
-      UserStreak,
-    ]),
+    TypeOrmModule.forFeature([UserActivityLog, DailyActiveUsers, UserStreak]),
     ScheduleModule.forRoot(),
   ],
   controllers: [AnalyticsMsController],

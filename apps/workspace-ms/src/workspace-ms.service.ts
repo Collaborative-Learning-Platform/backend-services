@@ -21,6 +21,7 @@ export class WorkspaceMsService {
     @Inject('QUIZ_SERVICE') private readonly quizService: ClientProxy,
     @Inject('DOCUMENT_SERVICE') private readonly documentService: ClientProxy,
     @Inject('CHAT_SERVICE') private readonly chatService: ClientProxy,
+    @Inject('ANALYTICS_SERVICE') private readonly analyticsClient: ClientProxy,
     @InjectRepository(Workspace)
     private readonly workspaceRepository: Repository<Workspace>,
     @InjectRepository(UserWorkspace)
@@ -58,6 +59,23 @@ export class WorkspaceMsService {
         createdAt: data.createdAt,
       });
       const response = await this.workspaceRepository.save(workspace);
+
+      //MessagePattern to analytics-ms to log the created workspace endpoint
+      await lastValueFrom(
+        this.analyticsClient.send(
+          { cmd: 'log_user_activity' },
+          {
+            user_id: response.createdBy,
+            category: 'GENERAL',
+            activity_type: 'CREATED_WORKSPACE',
+            metadata: {
+              workspaceId: response.workspaceId,
+              workspaceName: response.name,
+              createdAt: response.createdAt,
+            },
+          },
+        ),
+      );
       return {
         success: true,
         message: 'Workspace created successfully',
@@ -108,6 +126,16 @@ export class WorkspaceMsService {
   async addUsersToWorkspace(data: any) {
     const fileData = data.fileData;
     const workspaceId = data.workspaceId;
+
+    //Get the workspaceInformation
+    const WorkspaceData = await this.getWorkspaceById({ workspaceId });
+
+    // Ensure WorkspaceData.data is defined before logging
+    if (!WorkspaceData.data) {
+      throw new Error(
+        'Workspace data is undefined. Cannot log addition of users to workspace.',
+      );
+    }
 
     const failedUsers: string[] = [];
     const existingUsers: string[] = [];
@@ -181,6 +209,23 @@ export class WorkspaceMsService {
           joinedAt: newUserWorkspace.joinedAt,
           message: 'User added to workspace successfully',
         });
+
+        //Log the Addition of the user to the workspace only if the addition is successful
+        await lastValueFrom(
+          this.analyticsClient.send(
+            { cmd: 'log_user_activity' },
+            {
+              user_id: user.userId,
+              category: 'GENERAL',
+              activity_type: 'ADDED_TO_WORKSPACE',
+              metadata: {
+                workspaceId: WorkspaceData.data.workspaceId,
+                name: WorkspaceData.data.name,
+                createdBy: WorkspaceData.data.createdBy,
+              },
+            },
+          ),
+        );
 
         successAmount++;
       } catch (error) {
@@ -421,6 +466,24 @@ export class WorkspaceMsService {
       });
 
       const response = await this.groupRepository.save(group);
+
+      // Log the group creation in the analytics service only if group creation is successful
+      await lastValueFrom(
+        this.analyticsClient.send(
+          { cmd: 'log_user_activity' },
+          {
+            user_id: data.userId,
+            category: 'GENERAL',
+            activity_type: 'CREATED_GROUP',
+            metadata: {
+              groupId: response.groupId,
+              workspaceId: response.workspaceId,
+              name: response.name,
+              type: response.type,
+            },
+          },
+        ),
+      );
       return {
         success: true,
         message: 'Group created successfully',
@@ -457,6 +520,24 @@ export class WorkspaceMsService {
       });
 
       const savedGroup = await this.groupRepository.save(group);
+
+      // Log the group creation in the analytics service only if the group creation is successful
+      await lastValueFrom(
+        this.analyticsClient.send(
+          { cmd: 'log_user_activity' },
+          {
+            user_id: data.userId,
+            category: 'GENERAL',
+            activity_type: 'CREATED_GROUP',
+            metadata: {
+              groupId: savedGroup.groupId,
+              workspaceId: savedGroup.workspaceId,
+              name: savedGroup.name,
+              type: savedGroup.type,
+            },
+          },
+        ),
+      );
 
       const userGroup = this.userGroupRepository.create({
         userId: data.userId,
@@ -588,6 +669,14 @@ export class WorkspaceMsService {
     const userIds = data.userIds;
     const failedUsers: string[] = [];
 
+    //Get group data to log the addition of the group to log the group
+    const GroupData = await this.getGroupDetails({ groupId });
+
+    // Ensure GroupData.data is defined before logging
+    if (!GroupData.data) {
+      throw new Error('Group data is undefined. Cannot add users to group.');
+    }
+
     const TempResults: {
       userId: string;
       success: boolean;
@@ -609,6 +698,24 @@ export class WorkspaceMsService {
           success: true,
           message: 'User added to group successfully',
         });
+
+        //Log the addition of the user to the group by sending message to Analytics
+        await lastValueFrom(
+          this.analyticsClient.send(
+            { cmd: 'log_user_activity' },
+            {
+              user_id: userId,
+              category: 'GENERAL',
+              activity_type: 'ADDED_TO_GROUP',
+              metadata: {
+                groupId: GroupData.data.groupId,
+                workspaceId: GroupData.workspaceId,
+                name: GroupData.data.name,
+                type: GroupData.data.type,
+              },
+            },
+          ),
+        );
       } catch (error) {
         failedUsers.push(userId);
         TempResults.push({
@@ -758,7 +865,7 @@ export class WorkspaceMsService {
   }
 
   async getGroupsByUser(data: { userId: string }) {
-    try{
+    try {
       const userGroups = await this.userGroupRepository.find({
         where: { userId: data.userId },
         relations: ['group', 'group.workspace'],
@@ -796,7 +903,7 @@ export class WorkspaceMsService {
     }
   }
 
-  async deleteGroup(data: { groupId: string }) {
+  async deleteGroup(data: { groupId: string; userId: string }) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -805,7 +912,7 @@ export class WorkspaceMsService {
       const group = await queryRunner.manager.findOne(Group, {
         where: { groupId: data.groupId },
       });
-      
+
       if (!group) {
         await queryRunner.rollbackTransaction();
         return {
@@ -817,26 +924,56 @@ export class WorkspaceMsService {
 
       // Delete the group (cascade will remove user-groups)
       await queryRunner.manager.remove(group);
-      
+
       // Delete related entities in other microservices
-     const quizDeleteResponse = await this.deleteGroupQuizzes({ groupId: data.groupId });
-     const documentDeleteResponse = await this.deleteGroupDocuments({ groupId: data.groupId });
-     const chatDeleteResponse = await this.deleteGroupChats({ groupId: data.groupId });
-     const storageDeleteResponse = await this.deleteGroupStorage({ groupId: data.groupId });
+      const quizDeleteResponse = await this.deleteGroupQuizzes({
+        groupId: data.groupId,
+      });
+      const documentDeleteResponse = await this.deleteGroupDocuments({
+        groupId: data.groupId,
+      });
+      const chatDeleteResponse = await this.deleteGroupChats({
+        groupId: data.groupId,
+      });
+      const storageDeleteResponse = await this.deleteGroupStorage({
+        groupId: data.groupId,
+      });
 
-
-
-     if (!quizDeleteResponse.success || !documentDeleteResponse.success || !chatDeleteResponse.success || !storageDeleteResponse.success) {
-       await queryRunner.rollbackTransaction();
-       return {
-         success: false,
-         message: 'Failed to delete related entities',
-         status: 500,
-       };
-     }
+      if (
+        !quizDeleteResponse.success ||
+        !documentDeleteResponse.success ||
+        !chatDeleteResponse.success ||
+        !storageDeleteResponse.success
+      ) {
+        await queryRunner.rollbackTransaction();
+        return {
+          success: false,
+          message: 'Failed to delete related entities',
+          status: 500,
+        };
+      }
 
       // Commit the transaction if all operations succeed
       await queryRunner.commitTransaction();
+
+      // Log the deletion of the group only if the transaction is commited
+      await lastValueFrom(
+        this.analyticsClient.send(
+          { cmd: 'log_user_activity' },
+          {
+            user_id: data.userId,
+            category: 'GENERAL',
+            activity_type: 'DELETED_GROUP',
+            metadata: {
+              groupId: group.groupId,
+              name: group.name,
+              type: group.type,
+              workspaceId: group.workspaceId,
+              deletedBy: data.userId,
+            },
+          },
+        ),
+      );
 
       return {
         success: true,
@@ -857,15 +994,17 @@ export class WorkspaceMsService {
     }
   }
 
-
-
-
   //supportive functions for group deletion (interservice communication to delete related entities)
   //no need to delete user-groups as they are cascade deleted with group deletion
 
   async deleteGroupQuizzes(data: { groupId: string }) {
-    try{
-      const response = await lastValueFrom(this.quizService.send({ cmd: 'delete_group_quizzes' }, { groupId: data.groupId }));
+    try {
+      const response = await lastValueFrom(
+        this.quizService.send(
+          { cmd: 'delete_group_quizzes' },
+          { groupId: data.groupId },
+        ),
+      );
       return response;
     } catch (error) {
       console.error('Failed to delete group quizzes', error);
@@ -874,8 +1013,13 @@ export class WorkspaceMsService {
   }
 
   async deleteGroupDocuments(data: { groupId: string }) {
-    try{
-      const response = await lastValueFrom(this.documentService.send({ cmd: 'delete_group_documents' },  data.groupId ));
+    try {
+      const response = await lastValueFrom(
+        this.documentService.send(
+          { cmd: 'delete_group_documents' },
+          data.groupId,
+        ),
+      );
       return response;
     } catch (error) {
       console.error('Failed to delete group documents', error);
@@ -884,8 +1028,10 @@ export class WorkspaceMsService {
   }
 
   async deleteGroupChats(data: { groupId: string }) {
-    try{
-      const response = await lastValueFrom(this.chatService.send({ cmd: 'delete_group_chat' }, data.groupId));
+    try {
+      const response = await lastValueFrom(
+        this.chatService.send({ cmd: 'delete_group_chat' }, data.groupId),
+      );
       return response;
     } catch (error) {
       console.error('Failed to delete group chats', error);
@@ -894,19 +1040,19 @@ export class WorkspaceMsService {
   }
 
   async deleteGroupStorage(data: { groupId: string }) {
-    try{
-      const response = await lastValueFrom(this.storageService.send({ cmd: 'clear_group_storage' }, { groupId: data.groupId }));
+    try {
+      const response = await lastValueFrom(
+        this.storageService.send(
+          { cmd: 'clear_group_storage' },
+          { groupId: data.groupId },
+        ),
+      );
       return response;
     } catch (error) {
       console.error('Failed to delete group storage', error);
       return { success: false, message: 'Failed to delete group storage' };
     }
   }
-
-
-
-
-
 
   //supportive functions for bulk user addition
   private parseCsv(fileBuffer: Buffer): Promise<any[]> {
