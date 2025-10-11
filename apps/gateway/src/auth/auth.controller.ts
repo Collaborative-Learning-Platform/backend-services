@@ -172,8 +172,8 @@ export class AuthController {
   private async setAuthCookies(res: Response, access_token: string, refresh_token: string) {
   const cookieOptions = {
     httpOnly: true,
-    secure: false,         // false for HTTP; true if HTTPS
-    sameSite: 'none' as const, // allow cross-site cookies
+    secure: true,         
+    sameSite: 'none' as const, 
     path: '/',
   };
 
