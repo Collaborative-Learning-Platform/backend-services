@@ -27,23 +27,6 @@ export class ChatMsService {
       createdAt: saved.createdAt,
     };
 
-    //Add logging to the analytics service
-    await lastValueFrom(
-      this.analyticsClient.send(
-        { cmd: 'log_user_activity' },
-        {
-          user_id: saved.sender,
-          category: 'COMMUNICATION',
-          activity_type: 'POSTED_MESSAGE',
-          metadata: {
-            chatId: saved.chatId,
-            roomId: saved.roomId,
-            createdAt: response.createdAt,
-          },
-        },
-      ),
-    );
-
     return response;
   }
 

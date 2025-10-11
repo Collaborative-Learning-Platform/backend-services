@@ -11,16 +11,6 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
 
 @Module({
   imports: [
-    ClientsModule.register([
-      {
-        name: 'ANALYTICS_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: isDocker ? 'analytics-ms' : '127.0.0.1',
-          port: 4010,
-        },
-      },
-    ]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
