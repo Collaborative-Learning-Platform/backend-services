@@ -170,22 +170,17 @@ export class AuthController {
 
 
   private async setAuthCookies(res: Response, access_token: string, refresh_token: string) {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: false,         // false for HTTP; true if HTTPS
+    sameSite: 'none' as const, // allow cross-site cookies
+    path: '/',
+  };
 
-    res.cookie('access_token', access_token, {
-      httpOnly: true,
-      secure: false, 
-      sameSite: 'lax', 
-      path: '/',
-    });
+  res.cookie('access_token', access_token, cookieOptions);
+  res.cookie('refresh_token', refresh_token, cookieOptions);
+}
 
-    res.cookie('refresh_token', refresh_token, {
-      httpOnly: true,
-      secure: false, 
-      sameSite: 'lax', 
-      path: '/',
-    });
-
-  }
 
 
   @Post('bulk-upload')
