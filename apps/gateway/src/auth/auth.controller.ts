@@ -175,7 +175,7 @@ export class AuthController {
     secure: false,         
     sameSite: 'none' as const, 
     path: '/',
-    domain: 'localhost',
+    domain: '.localhost',
   };
 
   res.cookie('access_token', access_token, cookieOptions);
