@@ -12,7 +12,6 @@ export class ChatMsService {
   constructor(
     @InjectRepository(ChatMessage)
     private readonly messageRepo: Repository<ChatMessage>,
-    @Inject('ANALYTICS_SERVICE') private readonly analyticsClient: ClientProxy,
   ) {}
 
   async createMessage(dto: CreateMessageDto) {
