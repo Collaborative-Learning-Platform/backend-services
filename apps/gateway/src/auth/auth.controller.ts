@@ -174,6 +174,7 @@ export class AuthController {
     httpOnly: true,
     secure: true,         
     sameSite: 'none' as const, 
+
   };
 
   res.cookie('access_token', access_token, cookieOptions);
