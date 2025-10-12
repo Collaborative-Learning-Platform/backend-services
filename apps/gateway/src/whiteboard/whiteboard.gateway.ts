@@ -43,7 +43,7 @@ export class WhiteboardGateway
   ) {
     const { roomId, sessionId } = data;
 
-    this.logger.log(`Client ${client.id} joining whiteboard room: ${roomId}`); // Join the Socket.IO room
+    this.logger.log(`Client ${client.id} joining whiteboard room: ${roomId}`); 
     await client.join(roomId);
 
     try {
@@ -137,12 +137,8 @@ export class WhiteboardGateway
         updated: update.updated ? `${update.updated.length} items` : 'none',
         removed: update.removed ? `${update.removed.length} items` : 'none',
       };
-      // this.logger.log(`Update summary: ${JSON.stringify(updateSummary)}`);
     }
 
-    // this.logger.log(
-    //   `Broadcasting to room ${roomId}, excluding sender ${client.id}`,
-    // );
     client.to(roomId).emit('document_update', {
       sessionId,
       update,

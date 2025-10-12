@@ -133,6 +133,30 @@ export class QuizMsService {
     }
   }
 
+  async getQuizById(quizId: string) {
+    try {
+      const quiz = await this.quizRepo.findOne({ where: { quizId: quizId } });
+      if (!quiz) {
+        return {
+          success: false,
+          statusCode: 404,
+          message: 'Quiz not found',
+        };
+      }
+      return {
+        success: true,
+        statusCode: 200,
+        data: quiz,
+      };
+    } catch (error) {
+      return{
+        success: false,
+        statusCode: 400,
+        message: 'Error fetching quiz: ' + error.message,
+      }
+    }
+  }
+
   async getQuizByGroupId(groupId: string) {
     try {
       const group = await lastValueFrom(
