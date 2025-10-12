@@ -11,7 +11,7 @@ async function bootstrap() {
   app.use(cookieparser())
   
   app.enableCors({
-    origin: ['https://learniedu.vercel.app/', 'http://localhost:5173'],
+    origin: ['https://learniedu.vercel.app', 'http://localhost:5173'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
