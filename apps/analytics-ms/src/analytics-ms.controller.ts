@@ -21,7 +21,6 @@ export class AnalyticsMsController {
     @Payload()
     payload: {
       user_id: string;
-      role: string;
       category: ActivityCategory;
       activity_type: ActivityType;
       description?: string;
@@ -29,16 +28,6 @@ export class AnalyticsMsController {
     },
   ): Promise<ServiceResponse<any>> {
     return this.analyticsService.logUserActivity(payload);
-  }
-
-  // =============================================
-  // RECORD SESSION END TIME
-  // =============================================
-  @MessagePattern({ cmd: 'end_user_session' })
-  async endUserSession(
-    @Payload() sessionId: string,
-  ): Promise<ServiceResponse<any>> {
-    return this.analyticsService.updateSessionEndTime(sessionId);
   }
 
   // =============================================

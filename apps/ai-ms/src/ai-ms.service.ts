@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { GeminiProvider } from './providers/gemini.provider';
 import { GenerateStudyPlanDto } from './dto/generateStudyPlanDto';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, lastValueFrom } from 'rxjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StudyPlan } from './entity/study_plan.entity';
@@ -12,20 +12,25 @@ import { UpdateStudyTimeDto } from './dto/updateStudyTime.dto';
 
 @Injectable()
 export class AiMsService {
-  constructor(private readonly gemini: GeminiProvider,
-              @Inject('WORKSPACE_SERVICE') private readonly workspaceService: ClientProxy,
-              @Inject('QUIZ_SERVICE') private readonly quizService: ClientProxy,
-              @Inject('STORAGE_SERVICE') private readonly storageService: ClientProxy,
-              @InjectRepository(StudyPlan) private studyPlanRepository: Repository<StudyPlan>
-
+  constructor(
+    private readonly gemini: GeminiProvider,
+    @Inject('WORKSPACE_SERVICE') private readonly workspaceService: ClientProxy,
+    @Inject('QUIZ_SERVICE') private readonly quizService: ClientProxy,
+    @Inject('STORAGE_SERVICE') private readonly storageService: ClientProxy,
+    @Inject('ANALYTICS_SERVICE') private readonly analyticsClient: ClientProxy,
+    @InjectRepository(StudyPlan)
+    private studyPlanRepository: Repository<StudyPlan>,
   ) {}
 
   async generateStudyPlan(data: GenerateStudyPlanDto) {
     // const workspaces = await this.fetchAndPrepareWorkspaces(data.userId);
-    const filesUnderWorkspaces = await this.fetchAndPrepareDocuments(data.userId);
-    const attemptedQuizzesWithWorkspaces = await this.fetchUserAttemptedQuizzes(data.userId);
-    const model = this.gemini.getModel('gemini-2.0-flash'); 
-
+    const filesUnderWorkspaces = await this.fetchAndPrepareDocuments(
+      data.userId,
+    );
+    const attemptedQuizzesWithWorkspaces = await this.fetchUserAttemptedQuizzes(
+      data.userId,
+    );
+    const model = this.gemini.getModel('gemini-2.0-flash');
 
     const prompt = `
       You are a personalized study assistant.
@@ -111,14 +116,13 @@ export class AiMsService {
 
       
     `;
-    
 
     const result = await model.generateContent(prompt);
 
     let parsed = this.parseGeminiJSON(result.response.text());
     // console.log(parsed)
     if (!parsed) {
-      parsed = { raw: result.response.text() }; 
+      parsed = { raw: result.response.text() };
     }
     // Save the study plan to the database
     const studyPlan = this.studyPlanRepository.create({
@@ -126,19 +130,34 @@ export class AiMsService {
       plan: parsed,
       // inputData: data, // Optionally store the original input
     });
-    await this.studyPlanRepository.save(studyPlan);
+    const saved = await this.studyPlanRepository.save(studyPlan);
+
+    //Log the generation of the study plan in the analytics service
+    await lastValueFrom(
+      this.analyticsClient.send(
+        { cmd: 'log_user_activity' },
+        {
+          user_id: saved.userId,
+          category: 'AI_LEARNING',
+          activity_type: 'CREATED_STUDY_PLAN',
+          metadata: {
+            createdAt: saved.createdAt,
+          },
+        },
+      ),
+    );
 
     return {
       success: true,
       data: parsed,
       message: 'Study plan generated successfully',
     };
-
   }
 
-
   async getStudyPlan(userId: string) {
-    const studyPlan = await this.studyPlanRepository.findOne({ where: { userId } });
+    const studyPlan = await this.studyPlanRepository.findOne({
+      where: { userId },
+    });
     if (!studyPlan) {
       return { success: false, message: 'No study plan found for this user' };
     }
@@ -150,20 +169,19 @@ export class AiMsService {
     };
   }
 
-
-
   //Updating functions for task completion and study time
 
   async updateTaskCompletion(data: UpdateTaskCompletionDto) {
     const { userId, taskId, completed, dayName } = data;
-    const studyPlan = await this.studyPlanRepository.findOne({ where: { userId } });
+    const studyPlan = await this.studyPlanRepository.findOne({
+      where: { userId },
+    });
     if (!studyPlan) {
       return { success: false, message: 'No study plan found for this user' };
     }
     const plan = studyPlan.plan;
     let taskFound = false;
 
-    
     for (const day of plan) {
       for (const task of day.tasks) {
         if (task.id === taskId) {
@@ -187,10 +205,11 @@ export class AiMsService {
     };
   }
 
-
   async bulkUpdateTaskCompletion(data: BulkUpdateTaskCompletionDto) {
     const { userId, taskIds, completed, dayName, actualStudyTime } = data;
-    const studyPlan = await this.studyPlanRepository.findOne({ where: { userId } });
+    const studyPlan = await this.studyPlanRepository.findOne({
+      where: { userId },
+    });
     if (!studyPlan) {
       return { success: false, message: 'No study plan found for this user' };
     }
@@ -221,10 +240,11 @@ export class AiMsService {
     };
   }
 
-
-  async updateStudyTime(data: UpdateStudyTimeDto){
+  async updateStudyTime(data: UpdateStudyTimeDto) {
     const { userId, actualStudyTime, dayName } = data;
-    const studyPlan = await this.studyPlanRepository.findOne({ where: { userId } });
+    const studyPlan = await this.studyPlanRepository.findOne({
+      where: { userId },
+    });
     if (!studyPlan) {
       return { success: false, message: 'No study plan found for this user' };
     }
@@ -236,7 +256,7 @@ export class AiMsService {
         dayFound = true;
         break;
       }
-  }
+    }
 
     if (!dayFound) {
       return { success: false, message: 'Day not found' };
@@ -249,17 +269,21 @@ export class AiMsService {
     };
   }
 
-
   //supporting function to fetch and prepare data from other microservices
 
   async fetchAndPrepareWorkspaces(userId: string) {
-    try{
-      const allWorkspacesData = await firstValueFrom(this.workspaceService.send({ cmd: 'get_workspaces_by_user' }, { userId }));
-      const workspaces = allWorkspacesData.data.map((ws:any) => ({
+    try {
+      const allWorkspacesData = await firstValueFrom(
+        this.workspaceService.send(
+          { cmd: 'get_workspaces_by_user' },
+          { userId },
+        ),
+      );
+      const workspaces = allWorkspacesData.data.map((ws: any) => ({
         name: ws.name,
-        description : ws.description,
+        description: ws.description,
       }));
-      
+
       return workspaces;
     } catch (error) {
       console.error('Error fetching workspaces:', error);
@@ -267,120 +291,129 @@ export class AiMsService {
     }
   }
 
-  
   async fetchAllUserJoinedGroups(userId: string) {
-    try{
-      const response = await firstValueFrom(this.workspaceService.send({ cmd: 'get_groups_by_user' }, { userId }));
-      if(!response.success){
+    try {
+      const response = await firstValueFrom(
+        this.workspaceService.send({ cmd: 'get_groups_by_user' }, { userId }),
+      );
+      if (!response.success) {
         return [];
       }
-      const groupsWithWorkspaces = response.data.map((groupWs:any) => ({
+      const groupsWithWorkspaces = response.data.map((groupWs: any) => ({
         groupId: groupWs.groupId,
         groupName: groupWs.groupName,
         workspaceId: groupWs.workspaceId,
         workspaceName: groupWs.workspaceName,
       }));
-      const groups = groupsWithWorkspaces.map(g => g.groupId);
-      return {groupsWithWorkspaces, groups};
+      const groups = groupsWithWorkspaces.map((g) => g.groupId);
+      return { groupsWithWorkspaces, groups };
     } catch (error) {
       console.error('Error fetching groups:', error);
       return { success: false, message: 'Failed to fetch groups' };
     }
   }
 
-
   async fetchAndPrepareDocuments(userId: string) {
     const result = await this.fetchAllUserJoinedGroups(userId);
-    
-    
+
     if (Array.isArray(result) || 'success' in result) {
       console.error('Error fetching groups for documents:', result);
-    } 
-    else {
-      const {groupsWithWorkspaces, groups} = result;
+    } else {
+      const { groupsWithWorkspaces, groups } = result;
 
-      try{
-        const allDocumentsData = await firstValueFrom(this.storageService.send({ cmd: 'get-resources-by-group-ids' }, { groups }));
-       
-        if(!allDocumentsData.success){
-         
+      try {
+        const allDocumentsData = await firstValueFrom(
+          this.storageService.send(
+            { cmd: 'get-resources-by-group-ids' },
+            { groups },
+          ),
+        );
+
+        if (!allDocumentsData.success) {
           console.error('Error fetching documents:', allDocumentsData);
           return { success: false, message: 'Failed to fetch documents' };
-        
         }
-        
+
         // getting documents under single workspace
         const workspaceDocumentsMap = new Map();
-        
-        groupsWithWorkspaces.forEach(g => {
-          const docs = allDocumentsData.data.filter((doc:any) => doc.groupId === g.groupId);
-          
+
+        groupsWithWorkspaces.forEach((g) => {
+          const docs = allDocumentsData.data.filter(
+            (doc: any) => doc.groupId === g.groupId,
+          );
+
           if (!workspaceDocumentsMap.has(g.workspaceName)) {
             workspaceDocumentsMap.set(g.workspaceName, []);
           }
-          
+
           if (docs.length > 0) {
-            const formattedDocs = docs.map((d:any) => ({
+            const formattedDocs = docs.map((d: any) => ({
               fileName: d.fileName,
               description: d.description,
               contentType: d.contentType,
               estimatedCompletionTime: d.estimatedCompletionTime,
-              tags: d.tags.map((t:any) => t.tag),
+              tags: d.tags.map((t: any) => t.tag),
             }));
             workspaceDocumentsMap.get(g.workspaceName).push(...formattedDocs);
           }
         });
-        
+
         // Convert map to array format
-        const workspaceWithDocuments = Array.from(workspaceDocumentsMap.entries()).map(([workspaceName, documents]) => ({
+        const workspaceWithDocuments = Array.from(
+          workspaceDocumentsMap.entries(),
+        ).map(([workspaceName, documents]) => ({
           workspaceName,
-          documents: documents.length > 0 ? documents : 'No documents found'
+          documents: documents.length > 0 ? documents : 'No documents found',
         }));
-        
+
         // console.log(workspaceWithDocuments)
         return workspaceWithDocuments;
-
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-      return { success: false, message: 'Failed to fetch documents' };
+      } catch (error) {
+        console.error('Error fetching documents:', error);
+        return { success: false, message: 'Failed to fetch documents' };
+      }
     }
-    }   
   }
 
   async fetchUserAttemptedQuizzes(userId: string) {
-    try{
-      const response = await firstValueFrom(this.quizService.send({ cmd: 'get_user_attempted_quizzes' }, { userId }));
-      if(!response.success){
+    try {
+      const response = await firstValueFrom(
+        this.quizService.send(
+          { cmd: 'get_user_attempted_quizzes' },
+          { userId },
+        ),
+      );
+      if (!response.success) {
         return [];
       }
-      const attemptedQuizzes = response.data.map((quizAttempt:any) => ({
-          attempt_no: quizAttempt.attempt_no,
-          score: quizAttempt.score,
-          time_taken: quizAttempt.time_taken,
-          quiz: { name: quizAttempt.quiz.title,
-                  description: quizAttempt.quiz.description,
-                  Deadline: quizAttempt.quiz.deadline,
-          },
+      const attemptedQuizzes = response.data.map((quizAttempt: any) => ({
+        attempt_no: quizAttempt.attempt_no,
+        score: quizAttempt.score,
+        time_taken: quizAttempt.time_taken,
+        quiz: {
+          name: quizAttempt.quiz.title,
+          description: quizAttempt.quiz.description,
+          Deadline: quizAttempt.quiz.deadline,
+        },
       }));
-
-
 
       // console.log(attemptedQuizzes);
 
       const result = await this.fetchAllUserJoinedGroups(userId);
-      
+
       if (Array.isArray(result) || 'success' in result) {
         console.error('Error fetching groups for quizzes:', result);
         return attemptedQuizzes;
       }
-      
-      const { groupsWithWorkspaces } = result;
 
+      const { groupsWithWorkspaces } = result;
 
       //create a response with workspace name and all the quiz attempts under that workspace
       const workspaceQuizMap = new Map();
-      attemptedQuizzes.forEach((quizAttempt:any) => {
-        const group = groupsWithWorkspaces.find(g => g.groupId === quizAttempt.groupId);
+      attemptedQuizzes.forEach((quizAttempt: any) => {
+        const group = groupsWithWorkspaces.find(
+          (g) => g.groupId === quizAttempt.groupId,
+        );
         if (group) {
           const workspaceName = group.workspaceName;
           if (!workspaceQuizMap.has(workspaceName)) {
@@ -388,15 +421,15 @@ export class AiMsService {
           }
           workspaceQuizMap.get(workspaceName).push(quizAttempt);
         }
-      }
-      );
+      });
 
-      const attemptedQuizzesWithWorkspaces = Array.from(workspaceQuizMap.entries()).map(([workspaceName, quizzes]) => ({
+      const attemptedQuizzesWithWorkspaces = Array.from(
+        workspaceQuizMap.entries(),
+      ).map(([workspaceName, quizzes]) => ({
         workspaceName,
-        quizzes: quizzes.length > 0 ? quizzes : 'No quizzes attempted'
+        quizzes: quizzes.length > 0 ? quizzes : 'No quizzes attempted',
       }));
 
-      
       return attemptedQuizzesWithWorkspaces;
     } catch (error) {
       console.error('Error fetching quizzes:', error);
@@ -404,25 +437,17 @@ export class AiMsService {
     }
   }
 
-
-
   parseGeminiJSON = (text: string) => {
-  try {
-    // Remove code fences like ```json ... ```
-    const cleaned = text
-      .replace(/```(json)?/g, '') // remove ``` or ```json
-      .trim();
+    try {
+      // Remove code fences like ```json ... ```
+      const cleaned = text
+        .replace(/```(json)?/g, '') // remove ``` or ```json
+        .trim();
 
-    return JSON.parse(cleaned);
-  } catch (err) {
-    console.error('Invalid JSON from Gemini:', err, '\nRaw text:', text);
-    return null; // fallback
-  }
-  }
-
-
-
-
+      return JSON.parse(cleaned);
+    } catch (err) {
+      console.error('Invalid JSON from Gemini:', err, '\nRaw text:', text);
+      return null; // fallback
+    }
+  };
 }
-
-

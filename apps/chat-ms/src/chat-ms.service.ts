@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChatMessage } from './entity/chat-message.entity';
 import { CreateMessageDto } from './dto/createMessage.dto';
 import { MessageResponseDto } from './dto/messageResponse.dto';
+import { ClientProxy } from '@nestjs/microservices';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class ChatMsService {
@@ -29,11 +31,11 @@ export class ChatMsService {
 
   async getMessages(roomId: string) {
     const messages = await this.messageRepo.find({
-    where: { roomId },
-    order: { createdAt: 'ASC' },
+      where: { roomId },
+      order: { createdAt: 'ASC' },
     });
 
-    return messages.map(m => ({
+    return messages.map((m) => ({
       chatId: m.chatId,
       sender: m.sender,
       roomId: m.roomId,

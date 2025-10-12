@@ -174,7 +174,7 @@ export class WorkspaceMsController {
   }
 
   @MessagePattern({ cmd: 'delete_group' })
-  async deleteGroup(@Payload() data: { groupId: string }) {
+  async deleteGroup(@Payload() data: { groupId: string; userId: string }) {
     console.log('Received delete group request at microservice:', data);
     return this.workspaceMsService.deleteGroup(data);
   }

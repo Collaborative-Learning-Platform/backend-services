@@ -482,10 +482,12 @@ export class WorkspaceController {
 
   @UseGuards(AuthGuard)
   @Delete('groups/:groupId/delete')
-  async deleteGroup(@Param('groupId') groupId: string, @Res() res: Response) {
+  async deleteGroup(@Param('groupId') groupId: string, @Res() res: any) {
     console.log('Received delete group request at gateway:', groupId);
+
+    const userId = res.user.user_id;
     const response = await lastValueFrom(
-      this.WorkspaceClient.send({ cmd: 'delete_group' }, { groupId }),
+      this.WorkspaceClient.send({ cmd: 'delete_group' }, { groupId, userId }),
     );
     if (response?.error) {
       const ret = handleValidationError(response.error);
