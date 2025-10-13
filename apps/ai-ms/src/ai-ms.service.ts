@@ -469,6 +469,28 @@ export class AiMsService {
       `Generating flashcards for user: ${userId}, file: ${resourceId}`,
     );
 
+    // Check if the file type is supported by Gemini
+    const supportedMimeTypes = [
+      'application/pdf',
+      'text/plain',
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+      'image/heic',
+      'image/heif',
+    ];
+
+    if (!supportedMimeTypes.includes(contentType)) {
+      const errorMessage = `File type '${contentType}' is not supported for flashcard generation. Supported types include: PDF, plain text, images, videos, and audio files. Word documents (.docx) are not currently supported.`;
+      this.logger.error(errorMessage);
+
+      return {
+        success: false,
+        message: errorMessage,
+        error: 'UNSUPPORTED_FILE_TYPE',
+      };
+    }
+
     try {
       // Get download URL from storage service
       const downloadUrlResponse = await lastValueFrom(
