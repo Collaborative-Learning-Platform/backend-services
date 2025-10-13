@@ -89,7 +89,7 @@ export class StorageMsService {
     return { uploadUrl, resourceId };
   }
 
-  async generateDownloadUrl(resourceId: string, userId: string) {
+  async generateDownloadUrl(resourceId: string, userId?: string) {
     const resource = await this.resourceRepo.findOne({ where: { resourceId } });
     if (!resource) throw new Error('Resource not found');
 
@@ -102,23 +102,25 @@ export class StorageMsService {
       expiresIn: 300,
     });
 
-    // Send a message to analytics microservice to log activity
-    await lastValueFrom(
-      this.analyticsClient.send(
-        { cmd: 'log_user_activity' },
-        {
-          user_id: userId,
-          category: 'RESOURCE',
-          activity_type: 'DOWNLOADED_RESOURCE',
-          metadata: {
-            resourceId: resource.resourceId,
-            fileName: resource.fileName,
-            fileSize: resource.size,
-            contentType: resource.contentType,
+    // Send a message to analytics microservice to log activity only if userId is provided
+    if (userId) {
+      await lastValueFrom(
+        this.analyticsClient.send(
+          { cmd: 'log_user_activity' },
+          {
+            user_id: userId,
+            category: 'RESOURCE',
+            activity_type: 'DOWNLOADED_RESOURCE',
+            metadata: {
+              resourceId: resource.resourceId,
+              fileName: resource.fileName,
+              fileSize: resource.size,
+              contentType: resource.contentType,
+            },
           },
-        },
-      ),
-    );
+        ),
+      );
+    }
 
     return { downloadUrl };
   }

@@ -6,12 +6,20 @@ import { firstValueFrom, lastValueFrom } from 'rxjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StudyPlan } from './entity/study_plan.entity';
+import { Flashcard, FlashcardContent } from './entity/flashcard.entity';
 import { UpdateTaskCompletionDto } from './dto/updateTaskCompletion.dto';
 import { BulkUpdateTaskCompletionDto } from './dto/bulkUpdateTaskCompletion.dto';
 import { UpdateStudyTimeDto } from './dto/updateStudyTime.dto';
+import { GenerateFlashcardsDto } from './dto/generateFlashcards.dto';
+import { Logger } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 @Injectable()
 export class AiMsService {
+  private readonly logger = new Logger(AiMsService.name);
+
   constructor(
     private readonly gemini: GeminiProvider,
     @Inject('WORKSPACE_SERVICE') private readonly workspaceService: ClientProxy,
@@ -20,6 +28,8 @@ export class AiMsService {
     @Inject('ANALYTICS_SERVICE') private readonly analyticsClient: ClientProxy,
     @InjectRepository(StudyPlan)
     private studyPlanRepository: Repository<StudyPlan>,
+    @InjectRepository(Flashcard)
+    private flashcardRepository: Repository<Flashcard>,
   ) {}
 
   async generateStudyPlan(data: GenerateStudyPlanDto) {
@@ -450,4 +460,325 @@ export class AiMsService {
       return null; // fallback
     }
   };
+
+  // -- Generate Flashcards
+  async generateFlashcards(data: GenerateFlashcardsDto) {
+    const { userId, resourceId, fileName, contentType, description, number } =
+      data;
+    this.logger.log(
+      `Generating flashcards for user: ${userId}, file: ${resourceId}`,
+    );
+
+    try {
+      // Get download URL from storage service
+      const downloadUrlResponse = await lastValueFrom(
+        this.storageService.send(
+          { cmd: 'generate-download-url' },
+          { resourceId },
+        ),
+      );
+
+      if (!downloadUrlResponse?.downloadUrl) {
+        throw new Error('Failed to generate download URL from storage service');
+      }
+
+      const fileUrl = downloadUrlResponse.downloadUrl;
+      this.logger.log(`Downloading file from: ${fileUrl}`);
+
+      // Download file content
+      const fileBuffer = await this.downloadFromS3Url(fileUrl);
+      this.logger.log(`Downloaded file, size: ${fileBuffer.length} bytes`);
+
+      // Upload to Gemini File API
+      const fileManager = this.gemini.getFileManager();
+
+      // Create a temporary file path for upload
+      const tempFilePath = path.join(os.tmpdir(), `${Date.now()}-${fileName}`);
+
+      // Write buffer to temporary file
+      fs.writeFileSync(tempFilePath, fileBuffer);
+
+      const uploadResponse = await fileManager.uploadFile(tempFilePath, {
+        mimeType: contentType,
+        displayName: fileName,
+      });
+
+      // Clean up temporary file
+      fs.unlinkSync(tempFilePath);
+
+      this.logger.log(`Uploaded to Gemini: ${uploadResponse.file.uri}`);
+
+      // Generate flashcards using Gemini
+      const model = this.gemini.getModel('gemini-2.0-flash');
+      const prompt = `
+        Generate exactly ${number} educational flashcards from the provided ${contentType} file named "${fileName}".
+        
+        Additional context: ${description}
+        
+        Create comprehensive flashcards that cover the key concepts, definitions, and important points from the content.
+        
+        Return the flashcards in the following JSON format:
+        {
+          "title": "Brief descriptive title for this flashcard set",
+          "subject": "Main subject/topic area",
+          "totalCards": ${number},
+          "sourceFile": "${fileName}",
+          "generatedAt": "${new Date().toISOString()}",
+          "flashcards": [
+            {
+              "id": 1,
+              "front": "Question or prompt text",
+              "back": "Answer or explanation text"
+            }
+          ]
+        }
+        
+        Make sure:
+        - Generate exactly ${number} flashcards as requested
+        - Use simple front/back format (question on front, answer on back)
+        - Questions are clear and specific
+        - Answers are accurate and educational
+        - Cover different difficulty levels appropriately
+        - Include various question types (definitions, explanations, applications)
+        
+        Return ONLY the JSON, no additional text.
+      `;
+
+      const result = await model.generateContent([
+        {
+          fileData: {
+            mimeType: uploadResponse.file.mimeType,
+            fileUri: uploadResponse.file.uri,
+          },
+        },
+        { text: prompt },
+      ]);
+
+      const responseText = result.response.text();
+      this.logger.log(
+        `Gemini response received, length: ${responseText.length}`,
+      );
+
+      // Parse the JSON response
+      let flashcardsData = this.parseGeminiJSON(responseText);
+
+      console.log(flashcardsData);
+
+      if (!flashcardsData) {
+        // Fallback if JSON parsing fails
+        flashcardsData = {
+          title: `Flashcards for ${fileName}`,
+          subject: 'Generated Content',
+          flashcards: [],
+          totalCards: 0,
+          sourceFile: fileName,
+          generatedAt: new Date().toISOString(),
+          rawResponse: responseText,
+        };
+      }
+
+      // Save flashcards to database
+      const flashcardEntity = this.flashcardRepository.create({
+        title: flashcardsData.title || `Flashcards for ${fileName}`,
+        subject: flashcardsData.subject || 'Generated Content',
+        cardCount:
+          flashcardsData.totalCards || flashcardsData.flashcards?.length || 0,
+        flashcardContent: flashcardsData.flashcards || [],
+        userId,
+        resourceId,
+      });
+
+      const savedFlashcard =
+        await this.flashcardRepository.save(flashcardEntity);
+      this.logger.log(
+        `Saved flashcard set with ID: ${savedFlashcard.flashcardId}`,
+      );
+
+      // Log analytics
+      await lastValueFrom(
+        this.analyticsClient.send(
+          { cmd: 'log_user_activity' },
+          {
+            user_id: userId,
+            category: 'AI_LEARNING',
+            activity_type: 'GENERATED_FLASHCARDS',
+            metadata: {
+              flashcardId: savedFlashcard.flashcardId,
+              resourceId,
+              fileName,
+              contentType,
+              flashcardCount: savedFlashcard.cardCount,
+              generatedAt: new Date().toISOString(),
+            },
+          },
+        ),
+      );
+
+      // Clean up uploaded file from Gemini (optional)
+      try {
+        await fileManager.deleteFile(uploadResponse.file.name);
+        this.logger.log(
+          `Cleaned up uploaded file: ${uploadResponse.file.name}`,
+        );
+      } catch (cleanupError) {
+        this.logger.warn(`Failed to cleanup file: ${cleanupError.message}`);
+      }
+
+      return {
+        success: true,
+        data: { ...savedFlashcard, fileName },
+        message: 'Flashcards generated successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error generating flashcards: ${error.message}`,
+        error.stack,
+      );
+
+      return {
+        success: false,
+        message: `Failed to generate flashcards: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
+  // Helper method for downloading the flashcard
+  private async downloadFromS3Url(presignedUrl: string): Promise<Buffer> {
+    try {
+      const response = await fetch(presignedUrl, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to download file: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    } catch (error) {
+      console.error('Error downloading from S3:', error);
+      throw error;
+    }
+  }
+
+  // Function to fetch the existing flashcards from the database
+  async getFlashcardsByUser(userId: string) {
+    try {
+      this.logger.log(`Fetching flashcards for user: ${userId}`);
+
+      const flashcards = await this.flashcardRepository.find({
+        where: { userId },
+        order: { createdAt: 'DESC' }, // Most recent first
+      });
+
+      return {
+        success: true,
+        data: flashcards,
+        message: 'Flashcards retrieved successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching flashcards for user ${userId}: ${error.message}`,
+        error.stack,
+      );
+      return {
+        success: false,
+        message: 'Failed to retrieve flashcards',
+        error: error.message,
+      };
+    }
+  }
+
+  // Function to fetch a specific flashcard by ID and user
+  async getFlashcardById(flashcardId: string, userId: string) {
+    try {
+      this.logger.log(`Fetching flashcard ${flashcardId} for user: ${userId}`);
+
+      const flashcard = await this.flashcardRepository.findOne({
+        where: { flashcardId, userId },
+      });
+
+      if (!flashcard) {
+        return {
+          success: false,
+          message: 'Flashcard not found or access denied',
+        };
+      }
+
+      return {
+        success: true,
+        data: flashcard,
+        message: 'Flashcard retrieved successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching flashcard ${flashcardId}: ${error.message}`,
+        error.stack,
+      );
+      return {
+        success: false,
+        message: 'Failed to retrieve flashcard',
+        error: error.message,
+      };
+    }
+  }
+
+  // Function to delete a flashcard
+  async deleteFlashcard(flashcardId: string, userId: string) {
+    try {
+      this.logger.log(`Deleting flashcard ${flashcardId} for user: ${userId}`);
+
+      const flashcard = await this.flashcardRepository.findOne({
+        where: { flashcardId, userId },
+      });
+
+      if (!flashcard) {
+        return {
+          success: false,
+          message: 'Flashcard not found or access denied',
+        };
+      }
+
+      await this.flashcardRepository.remove(flashcard);
+
+      // Log analytics
+      await lastValueFrom(
+        this.analyticsClient.send(
+          { cmd: 'log_user_activity' },
+          {
+            user_id: userId,
+            category: 'AI_LEARNING',
+            activity_type: 'DELETED_FLASHCARDS',
+            metadata: {
+              flashcardId,
+              title: flashcard.title,
+              deletedAt: new Date().toISOString(),
+            },
+          },
+        ),
+      ).catch((analyticsError) => {
+        this.logger.error(
+          `Analytics logging failed: ${analyticsError.message}`,
+        );
+      });
+
+      return {
+        success: true,
+        message: 'Flashcard deleted successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error deleting flashcard ${flashcardId}: ${error.message}`,
+        error.stack,
+      );
+      return {
+        success: false,
+        message: 'Failed to delete flashcard',
+        error: error.message,
+      };
+    }
+  }
 }

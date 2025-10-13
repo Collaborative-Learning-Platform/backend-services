@@ -506,4 +506,16 @@ export class WorkspaceController {
       data: response.data,
     });
   }
+
+  @UseGuards(AuthGuard)
+  @Post('groups/by-user')
+  async getGroupsByUser(
+    @Body() data: { userId: string },
+    @Res() res: Response,
+  ) {
+    const response = await lastValueFrom(
+      this.WorkspaceClient.send({ cmd: 'get_groups_by_user' }, data),
+    );
+    return res.json(response);
+  }
 }

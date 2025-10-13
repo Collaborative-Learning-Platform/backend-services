@@ -91,4 +91,14 @@ export class StorageController {
   async deleteResource(@Param('resourceId') resourceId: string) {
     return this.storageClient.send({ cmd: 'delete-resource' }, { resourceId });
   }
+
+  //Get Resource details by an array of groupIds
+  @Post('resources/by-group-ids')
+  @UseGuards(AuthGuard)
+  async getResourcesByGroupIds(@Body() data: { groups: string[] }) {
+    const response = await lastValueFrom(
+      this.storageClient.send({ cmd: 'get-resources-by-group-ids' }, data),
+    );
+    return response;
+  }
 }

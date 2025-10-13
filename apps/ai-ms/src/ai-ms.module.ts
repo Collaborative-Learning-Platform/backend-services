@@ -9,6 +9,7 @@ import { GeminiProvider } from './providers/gemini.provider';
 import { ClientsModule } from '@nestjs/microservices';
 import { Transport } from '@nestjs/microservices';
 import { StudyPlan } from './entity/study_plan.entity';
+import { Flashcard } from './entity/flashcard.entity';
 
 const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
 
@@ -55,13 +56,13 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [StudyPlan],
+      entities: [StudyPlan, Flashcard],
       synchronize: true,
       ssl: {
         rejectUnauthorized: false,
       },
     }),
-    TypeOrmModule.forFeature([StudyPlan]),
+    TypeOrmModule.forFeature([StudyPlan, Flashcard]),
   ],
   controllers: [AiMsController],
   providers: [AiMsService, GeminiProvider],
