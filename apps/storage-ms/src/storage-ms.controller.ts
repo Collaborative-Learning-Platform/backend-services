@@ -17,7 +17,7 @@ export class StorageMsController {
   // Generate download URL
   @MessagePattern({ cmd: 'generate-download-url' })
   async getDownloadUrl(
-    @Payload() data: { resourceId: string; userId: string },
+    @Payload() data: { resourceId: string; userId?: string },
   ) {
     console.log(`Generating url for: ${data.resourceId}`);
     return this.storageService.generateDownloadUrl(

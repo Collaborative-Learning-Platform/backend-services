@@ -28,13 +28,14 @@ export enum ActivityType {
   POSTED_MESSAGE = 'POSTED_MESSAGE', //Done
 
   // Student-side
-  STARTED_QUIZ = 'STARTED_QUIZ',
+  STARTED_QUIZ = 'STARTED_QUIZ', //Done
   SUBMITTED_QUIZ = 'SUBMITTED_QUIZ',
   GENERATED_STUDY_PLAN = 'GENERATED_STUDY_PLAN', //Done
-  GENERATED_FLASHCARDS = 'GENERATED_FLASHCARDS',
+  GENERATED_FLASHCARDS = 'GENERATED_FLASHCARDS', // Done
+  DELETED_FLASHCARDS = 'DELETED_FLASHCARD', //Done
 
   // Tutor-side
-  CREATED_QUIZ = 'CREATED_QUIZ',
+  CREATED_QUIZ = 'CREATED_QUIZ', // Done
 
   // Admin-side
   DELETED_GROUP = 'DELETED_GROUP', // Done
@@ -48,6 +49,7 @@ export const ActivityMessageMap: Record<ActivityType, string> = {
   [ActivityType.DOWNLOADED_RESOURCE]: 'downloaded  resource',
   [ActivityType.UPLOADED_RESOURCE]: 'uploaded  resource',
   [ActivityType.GENERATED_FLASHCARDS]: 'generated flashcards',
+  [ActivityType.DELETED_FLASHCARDS]: 'deleted flashcards',
   [ActivityType.JOINED_WHITEBOARD]: 'collaborated on whiteboard',
   [ActivityType.JOINED_DOCUMENT]: 'collaborated on Document',
   [ActivityType.ADDED_TO_GROUP]: 'was added to  group',
@@ -75,6 +77,7 @@ export const RoleActivityMap = {
     ActivityType.DOWNLOADED_RESOURCE,
     ActivityType.UPLOADED_RESOURCE,
     ActivityType.GENERATED_FLASHCARDS,
+    ActivityType.DELETED_FLASHCARDS,
     ActivityType.JOINED_WHITEBOARD,
     ActivityType.JOINED_DOCUMENT,
     ActivityType.ADDED_TO_GROUP,
@@ -83,6 +86,7 @@ export const RoleActivityMap = {
     ActivityType.SUBMITTED_QUIZ,
     ActivityType.GENERATED_STUDY_PLAN,
     ActivityType.POSTED_MESSAGE,
+    ActivityType.CREATED_GROUP,
   ],
   tutor: [
     ActivityType.LOGIN,
