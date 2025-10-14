@@ -15,6 +15,7 @@ import { GetUploadUrlDto } from './dto/getUploadUrl.dto';
 import { In } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
+import { ResourceMetadata } from 'libs/types/logger/logger-metadata.interface';
 
 @Injectable()
 export class StorageMsService {
@@ -69,6 +70,13 @@ export class StorageMsService {
     const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
 
     // Send a message to analytics microservice to log activity
+    const resourceMetadata: ResourceMetadata = {
+      resourceId: resource.resourceId,
+      fileName: resource.fileName,
+      fileSize: resource.size,
+      contentType: resource.contentType,
+    };
+
     await lastValueFrom(
       this.analyticsClient.send(
         { cmd: 'log_user_activity' },
@@ -76,12 +84,7 @@ export class StorageMsService {
           user_id: userId,
           category: 'RESOURCE',
           activity_type: 'UPLOADED_RESOURCE',
-          metadata: {
-            resourceId: resource.resourceId,
-            fileName: resource.fileName,
-            fileSize: resource.size,
-            contentType: resource.contentType,
-          },
+          metadata: resourceMetadata,
         },
       ),
     );
@@ -104,6 +107,13 @@ export class StorageMsService {
 
     // Send a message to analytics microservice to log activity only if userId is provided
     if (userId) {
+      const resourceMetadata: ResourceMetadata = {
+        resourceId: resource.resourceId,
+        fileName: resource.fileName,
+        fileSize: resource.size,
+        contentType: resource.contentType,
+      };
+
       await lastValueFrom(
         this.analyticsClient.send(
           { cmd: 'log_user_activity' },
@@ -111,12 +121,7 @@ export class StorageMsService {
             user_id: userId,
             category: 'RESOURCE',
             activity_type: 'DOWNLOADED_RESOURCE',
-            metadata: {
-              resourceId: resource.resourceId,
-              fileName: resource.fileName,
-              fileSize: resource.size,
-              contentType: resource.contentType,
-            },
+            metadata: resourceMetadata,
           },
         ),
       );

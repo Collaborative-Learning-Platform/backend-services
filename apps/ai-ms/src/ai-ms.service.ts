@@ -12,6 +12,10 @@ import { BulkUpdateTaskCompletionDto } from './dto/bulkUpdateTaskCompletion.dto'
 import { UpdateStudyTimeDto } from './dto/updateStudyTime.dto';
 import { GenerateFlashcardsDto } from './dto/generateFlashcards.dto';
 import { Logger } from '@nestjs/common';
+import {
+  FlashcardCreateMetadata,
+  FlashcardDeleteMetadata,
+} from 'libs/types/logger/logger-metadata.interface';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -616,7 +620,17 @@ export class AiMsService {
         `Saved flashcard set with ID: ${savedFlashcard.flashcardId}`,
       );
 
-      // Log analytics
+      // Log analytics using FlashcardCreateMetadata interface
+      const createMetadata: FlashcardCreateMetadata = {
+        flashcardId: savedFlashcard.flashcardId,
+        title: savedFlashcard.title,
+        subject: savedFlashcard.subject,
+        fileName,
+        contentType,
+        flashcardCount: savedFlashcard.cardCount.toString(),
+        generatedAt: new Date().toISOString(),
+      };
+
       await lastValueFrom(
         this.analyticsClient.send(
           { cmd: 'log_user_activity' },
@@ -624,14 +638,7 @@ export class AiMsService {
             user_id: userId,
             category: 'AI_LEARNING',
             activity_type: 'GENERATED_FLASHCARDS',
-            metadata: {
-              flashcardId: savedFlashcard.flashcardId,
-              resourceId,
-              fileName,
-              contentType,
-              flashcardCount: savedFlashcard.cardCount,
-              generatedAt: new Date().toISOString(),
-            },
+            metadata: createMetadata,
           },
         ),
       );
@@ -766,7 +773,13 @@ export class AiMsService {
 
       await this.flashcardRepository.remove(flashcard);
 
-      // Log analytics
+      // Log analytics using FlashcardDeleteMetadata interface
+      const deleteMetadata: FlashcardDeleteMetadata = {
+        flashcardId,
+        title: flashcard.title,
+        deletedAt: new Date().toISOString(),
+      };
+
       await lastValueFrom(
         this.analyticsClient.send(
           { cmd: 'log_user_activity' },
@@ -774,11 +787,7 @@ export class AiMsService {
             user_id: userId,
             category: 'AI_LEARNING',
             activity_type: 'DELETED_FLASHCARDS',
-            metadata: {
-              flashcardId,
-              title: flashcard.title,
-              deletedAt: new Date().toISOString(),
-            },
+            metadata: deleteMetadata,
           },
         ),
       ).catch((analyticsError) => {

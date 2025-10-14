@@ -39,4 +39,26 @@ export class AnalyticsMsController {
   ): Promise<ServiceResponse<any>> {
     return this.analyticsService.fetchDailyActiveUsersForRange(dateRange);
   }
+
+  // =============================================
+  // FETCH RECENT USER ACTIVITIES FOR A USER
+  // =============================================
+  @MessagePattern({ cmd: 'get_recent_user_activities' })
+  async fetchRecentUserActivities(
+    @Payload() payload: { user_id: string },
+  ): Promise<ServiceResponse<any>> {
+    const { user_id } = payload;
+    return this.analyticsService.fetchRecentUserActivities(user_id);
+  }
+
+  // =============================================
+  // GET USER CURRENT STREAK DAYS
+  // =============================================
+  @MessagePattern({ cmd: 'get_user_current_streak_days' })
+  async getUserCurrentStreakDays(
+    @Payload() payload: { user_id: string },
+  ): Promise<ServiceResponse<any>> {
+    const { user_id } = payload;
+    return this.analyticsService.getUserCurrentStreakDays(user_id);
+  }
 }
