@@ -87,4 +87,9 @@ export class QuizMsController {
     return this.quizMsService.deleteGroupQuizzes(data.groupId);
   }
 
+  @MessagePattern({ cmd: 'get_quiz_by_id' })
+  getQuizById(@Payload() quizId: string) {
+    return this.quizMsService.getQuizById(quizId);
+  }
+
 }

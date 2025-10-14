@@ -71,39 +71,6 @@ export class AnalyticsController {
     });
   }
 
-  //
-
-  // --- End user session ---
-  @Post('session/end/:sessionId')
-  @UseGuards(AuthGuard)
-  async endUserSession(
-    @Param('sessionId') sessionId: string,
-    @Res() res: Response,
-  ) {
-    const response = await lastValueFrom(
-      this.analyticsClient.send({ cmd: 'end_user_session' }, sessionId),
-    );
-
-    if (response?.error) {
-      const ret = handleValidationError(response.error);
-      return res.json(ret);
-    }
-
-    if (!response?.success) {
-      return res.json({
-        success: false,
-        message: response.message || 'Failed to end user session',
-        status: response.status || 400,
-      });
-    }
-
-    return res.json({
-      success: true,
-      message: 'User session ended successfully',
-      data: response.data,
-    });
-  }
-
   // --- Fetch daily active users (optionally for a date range) ---
   @Get('daily-active-users')
   @UseGuards(AuthGuard)

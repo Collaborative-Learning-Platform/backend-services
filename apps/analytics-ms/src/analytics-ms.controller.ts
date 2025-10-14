@@ -21,7 +21,6 @@ export class AnalyticsMsController {
     @Payload()
     payload: {
       user_id: string;
-      role: string;
       category: ActivityCategory;
       activity_type: ActivityType;
       description?: string;
@@ -32,16 +31,6 @@ export class AnalyticsMsController {
   }
 
   // =============================================
-  // RECORD SESSION END TIME
-  // =============================================
-  @MessagePattern({ cmd: 'end_user_session' })
-  async endUserSession(
-    @Payload() sessionId: string,
-  ): Promise<ServiceResponse<any>> {
-    return this.analyticsService.updateSessionEndTime(sessionId);
-  }
-
-  // =============================================
   // FETCH DAILY ACTIVE USERS FOR A TIME PERIOD
   // =============================================
   @MessagePattern({ cmd: 'get_daily_active_users' })
@@ -49,5 +38,27 @@ export class AnalyticsMsController {
     @Payload() dateRange: { start: Date; end: Date },
   ): Promise<ServiceResponse<any>> {
     return this.analyticsService.fetchDailyActiveUsersForRange(dateRange);
+  }
+
+  // =============================================
+  // FETCH RECENT USER ACTIVITIES FOR A USER
+  // =============================================
+  @MessagePattern({ cmd: 'get_recent_user_activities' })
+  async fetchRecentUserActivities(
+    @Payload() payload: { user_id: string },
+  ): Promise<ServiceResponse<any>> {
+    const { user_id } = payload;
+    return this.analyticsService.fetchRecentUserActivities(user_id);
+  }
+
+  // =============================================
+  // GET USER CURRENT STREAK DAYS
+  // =============================================
+  @MessagePattern({ cmd: 'get_user_current_streak_days' })
+  async getUserCurrentStreakDays(
+    @Payload() payload: { user_id: string },
+  ): Promise<ServiceResponse<any>> {
+    const { user_id } = payload;
+    return this.analyticsService.getUserCurrentStreakDays(user_id);
   }
 }

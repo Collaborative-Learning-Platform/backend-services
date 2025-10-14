@@ -31,7 +31,6 @@ async function bootstrap() {
   await Promise.all([app.listen(), startHocuspocusCollabServer()]);
 
   console.log('Document microservice is running on TCP port 4006');
-  console.log('Hocuspocus WebSocket server is running on port 1234');
 }
 
 bootstrap();

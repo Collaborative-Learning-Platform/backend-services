@@ -75,6 +75,14 @@ export class QuizController {
     return res.json(response);
   }
 
+  @Get('/:quizId')
+  async getQuizById(@Param('quizId') quizId: string, @Res() res: Response) {
+    const response = await lastValueFrom(
+      this.quizClient.send({ cmd: 'get_quiz_by_id' }, quizId),
+    );
+    return res.json(response);
+  }
+
   @Post('update/:quizId')
   async updateQuiz(
     @Param('quizId') quizId: string,

@@ -7,9 +7,20 @@ import {
   UserActivityLog,
   RoleActivityMap,
 } from './entity/user-activity-log.entity';
-import { UserActivitySession } from './entity/user-activity-session.entity';
-import { DocumentActivitySession } from './entity/document-activity-session.entity';
-import { Repository } from 'typeorm';
+import {
+  ChatMetadata,
+  CreateQuizMetadata,
+  DocumentMetadata,
+  FlashcardCreateMetadata,
+  FlashcardDeleteMetadata,
+  GroupMetadata,
+  QuizMetadata,
+  ResourceMetadata,
+  WhiteboardMetadata,
+  WorkspaceAddMetadata,
+  WorkspaceCreateMetadata,
+} from 'libs/types/logger/logger-metadata.interface';
+import { Repository, Not } from 'typeorm';
 import { UserStreak } from './entity/user-streak.entity';
 import { startOfDay, subDays, isSameDay, endOfDay, format } from 'date-fns';
 import { DailyActiveUsers } from './entity/daily-active-users.entity';
@@ -24,12 +35,6 @@ export class AnalyticsMsService {
   constructor(
     @InjectRepository(UserActivityLog)
     private readonly userActivityRepo: Repository<UserActivityLog>,
-
-    @InjectRepository(UserActivitySession)
-    private readonly userSessionRepo: Repository<UserActivitySession>,
-
-    @InjectRepository(DocumentActivitySession)
-    private readonly documentSessionRepo: Repository<DocumentActivitySession>,
 
     @InjectRepository(UserStreak)
     private readonly userStreakRepo: Repository<UserStreak>,
@@ -121,30 +126,6 @@ export class AnalyticsMsService {
         }
       }
 
-      // Create a session entry for activities that require time tracking
-      const timedActivities: ActivityType[] = [
-        ActivityType.STARTED_QUIZ,
-        ActivityType.VIEWED_FLASHCARDS,
-        ActivityType.VIEWED_STUDY_PLAN,
-        ActivityType.VIEWED_RESOURCE,
-        ActivityType.VIEWED_CHAT,
-      ];
-
-      if (timedActivities.includes(activity_type)) {
-        const session = this.userSessionRepo.create({
-          user_id,
-          activity_log_id: saved.id,
-          started_at: new Date(), // Record when session begins
-          duration_seconds: 0, // Initially 0, can update when session ends
-        });
-
-        await this.userSessionRepo.save(session);
-
-        this.logger.debug(
-          `Activity started: ${activity_type} by ${role} (${user_id})`,
-        );
-      }
-
       this.logger.debug(
         `Activity logged: ${activity_type} by ${role} (${user_id})`,
       );
@@ -210,66 +191,6 @@ export class AnalyticsMsService {
   }
 
   // =============================================
-  // UPDATE SESSION ENDTIME
-  // =============================================
-
-  async updateSessionEndTime(sessionId: string) {
-    try {
-      // Fetch the session
-      const session = await this.userSessionRepo.findOne({
-        where: { id: sessionId },
-      });
-
-      if (!session) {
-        this.logger.warn(`Session not found: ${sessionId}`);
-        return {
-          success: false,
-          message: 'Session not found',
-          status: 404,
-        };
-      }
-
-      // Check if already ended
-      if (session.ended_at) {
-        this.logger.debug(`Session ${sessionId} already ended`);
-        return {
-          success: true,
-          message: 'Session already ended',
-        };
-      }
-
-      // Update end time and duration
-      const now = new Date();
-      session.ended_at = now;
-      session.duration_seconds = Math.floor(
-        (now.getTime() - session.started_at.getTime()) / 1000,
-      );
-
-      await this.userSessionRepo.save(session);
-
-      this.logger.debug(
-        `Session ${sessionId} ended. Duration: ${session.duration_seconds}s`,
-      );
-
-      return {
-        success: true,
-        message: 'Session ended successfully',
-        data: {
-          session_id: session.id,
-          duration_seconds: session.duration_seconds,
-        },
-      };
-    } catch (error) {
-      this.logger.error('Failed to update session end time', error.stack);
-      return {
-        success: false,
-        message: 'Error updating session end time',
-        status: 500,
-      };
-    }
-  }
-
-  // =============================================
   // UPDATE DAILY ACTIVE USERS
   // =============================================
 
@@ -323,7 +244,7 @@ export class AnalyticsMsService {
 
   // -- Crohn Job to calculate daily active users for the past day
 
-  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async recordDailyActiveUsers() {
     this.logger.log('Running daily active user aggregation job...');
     await this.calculateAndStoreDailyActiveUsers(); // no params → uses yesterday by default
@@ -376,6 +297,251 @@ export class AnalyticsMsService {
         message: 'Failed to fetch daily active users',
         status: 500,
       };
+    }
+  }
+
+  // =============================================
+  // FETCH RECENT USER ACTIVITY BY USER_ID
+  // =============================================
+  async fetchRecentUserActivities(user_id: string, limit = 5) {
+    try {
+      const activities = await this.userActivityRepo
+        .createQueryBuilder('activity')
+        .select([
+          'activity.id as id',
+          'activity.category as category',
+          'activity.activity_type as activity_type',
+          'activity.description as description',
+          'activity.metadata as metadata',
+          'activity.created_at as created_at',
+        ])
+        .where('activity.user_id = :user_id', { user_id })
+        .andWhere('activity.activity_type != :login', {
+          login: ActivityType.LOGIN,
+        })
+        .orderBy('activity.created_at', 'DESC')
+        .limit(limit)
+        .getRawMany();
+
+      // Debug log to see raw activities with metadata
+      activities.forEach((activity) => {
+        console.log('Raw activity with metadata:', {
+          type: activity.activity_type,
+          metadata: activity.metadata,
+          metadataType: typeof activity.metadata,
+        });
+      });
+
+      // Format the response data using the Activity Message Map and metadata
+      const formattedActivities = activities.map((activity) => {
+        let description = ActivityMessageMap[activity.activity_type];
+        const metadata = activity.metadata;
+
+        // Add specific details based on activity type and metadata
+        switch (activity.activity_type) {
+          case ActivityType.DOWNLOADED_RESOURCE:
+          case ActivityType.UPLOADED_RESOURCE:
+            if (metadata) {
+              const resourceMetadata = metadata as ResourceMetadata;
+              if (resourceMetadata.fileName) {
+                description = `${description} "${resourceMetadata.fileName}"`;
+              }
+            }
+            break;
+          case ActivityType.GENERATED_FLASHCARDS:
+            if (metadata) {
+              const flashcardMetadata =
+                activity.metadata as FlashcardCreateMetadata;
+              description = `${description} from resource ${flashcardMetadata.fileName}`;
+            }
+            break;
+          case ActivityType.DELETED_FLASHCARDS:
+            if (metadata) {
+              const flashcardMetadata =
+                activity.metadata as FlashcardDeleteMetadata;
+              description = `${description} "${flashcardMetadata.title}"`;
+            }
+            break;
+          case ActivityType.JOINED_WHITEBOARD:
+            if (metadata) {
+              const whiteboardMetadata =
+                activity.metadata as WhiteboardMetadata;
+              description = `${description} in group ${whiteboardMetadata.groupName}`;
+            }
+            break;
+          case ActivityType.JOINED_DOCUMENT:
+            if (metadata) {
+              const documentMetadata = activity.metadata as DocumentMetadata;
+              description = `${description} "${documentMetadata.title}"`;
+            }
+            break;
+          case ActivityType.ADDED_TO_WORKSPACE:
+            if (metadata) {
+              const workspaceMetadata =
+                activity.metadata as WorkspaceAddMetadata;
+              description = `${description} "${workspaceMetadata.name}"`;
+            }
+            break;
+          case ActivityType.ADDED_TO_GROUP:
+            if (metadata) {
+              const groupMetadata = activity.metadata as GroupMetadata;
+              description = `${description} "${groupMetadata.name}"`;
+            }
+          case ActivityType.CREATED_WORKSPACE:
+            if (metadata) {
+              const workspaceMetadata =
+                activity.metadata as WorkspaceCreateMetadata;
+              description = `${description} "${workspaceMetadata.workspaceName}"`;
+            }
+            break;
+          case ActivityType.CREATED_GROUP:
+            if (metadata) {
+              const groupMetadata = activity.metadata as GroupMetadata;
+              description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
+            }
+            break;
+          case ActivityType.DELETED_GROUP:
+            if (metadata) {
+              const groupMetadata = activity.metadata as GroupMetadata;
+              description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
+            }
+          case ActivityType.POSTED_MESSAGE:
+            if (metadata) {
+              const chatMetadata = activity.metadata as ChatMetadata;
+              description = `${description} in group "${chatMetadata.groupName}`;
+            }
+            break;
+          case ActivityType.GENERATED_STUDY_PLAN:
+            description = `${description}`;
+            break;
+          case ActivityType.STARTED_QUIZ:
+            if (metadata) {
+              const quizMetadata = activity.metadata as QuizMetadata;
+              description = `${description} "${quizMetadata.quizTitle}"`;
+            }
+            break;
+          case ActivityType.SUBMITTED_QUIZ:
+            if (metadata) {
+              const quizMetadata = activity.metadata as QuizMetadata;
+              description = `${description} "${quizMetadata.quizTitle}"`;
+            }
+            break;
+          case ActivityType.CREATED_QUIZ:
+            if (metadata) {
+              const quizMetadata = activity.metadata as CreateQuizMetadata;
+              description = `${description} "${quizMetadata.quizTitle}" for group "${quizMetadata.groupName}" (due: ${quizMetadata.dueDate})`;
+            }
+            break;
+          default:
+            break;
+        }
+
+        return {
+          ...activity,
+          description,
+        };
+      });
+
+      const activitiesWithTime = formattedActivities.map((activity) => {
+        console.log('Backend activity:', activity); // Debug log
+        return {
+          id: activity.id,
+          category: activity.activity_category || activity.category, // Try both possible field names
+          activity_type: activity.activity_type,
+          description: activity.description,
+          time: this.getTimeDifference(activity.created_at),
+        };
+      });
+
+      return {
+        success: true,
+        data: activitiesWithTime,
+        message: `Fetched ${formattedActivities.length} recent activities for user ${user_id}`,
+        status: 200,
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch recent user activities', error.stack);
+      return {
+        success: false,
+        message: 'Failed to fetch recent user activities',
+        status: 500,
+      };
+    }
+  }
+
+  // =============================================
+  // GET USER CURRENT STREAK DAYS
+  // =============================================
+
+  async getUserCurrentStreakDays(user_id: string) {
+    try {
+      const streak = await this.userStreakRepo.findOne({ where: { user_id } });
+
+      if (!streak) {
+        this.logger.warn(`No streak record found for user ${user_id}`);
+        return {
+          success: true,
+          data: 0,
+          message: 'Current streak days fetched successfully',
+        };
+      }
+
+      return {
+        success: true,
+        data: streak.current_streak_days,
+        message: 'Current streak days fetched successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch current streak days for user ${user_id}`,
+        error.stack,
+      );
+      return {
+        success: false,
+        message: 'Failed to fetch current streak days',
+      };
+    }
+  }
+
+  //Helper funciton to get elapsed time from activity
+  private getTimeDifference(createdAt: Date | string): string {
+    // Get current time in local timezone
+    const now = new Date();
+    const createdDate = new Date(createdAt);
+
+    // Convert createdAt from UTC to local timezone for comparison
+    const localOffset = now.getTimezoneOffset() * 60000; // offset in milliseconds
+    const localCreatedDate = new Date(createdDate.getTime() - localOffset);
+
+    // Calculate difference using local times
+    const diffMs = now.getTime() - localCreatedDate.getTime();
+
+    // // Debug logs to track time calculation
+    // console.log('Time calculation debug:', {
+    //   nowLocal: now.toISOString(),
+    //   createdAtUTC: createdDate.toISOString(),
+    //   createdAtLocal: localCreatedDate.toISOString(),
+    //   timezoneOffset: now.getTimezoneOffset(),
+    //   diffMs,
+    //   diffMinutes: Math.floor(diffMs / (1000 * 60)),
+    //   diffHours: Math.floor(diffMs / (1000 * 60 * 60)),
+    //   diffDays: Math.floor(diffMs / (1000 * 60 * 60 * 24)),
+    // });
+
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(
+      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+    );
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (diffDays > 0) {
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    } else if (diffHours > 0) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else if (diffMinutes > 0) {
+      return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+    } else {
+      return 'Just now';
     }
   }
 }
