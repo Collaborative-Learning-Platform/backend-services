@@ -26,6 +26,8 @@ export class StorageMsService {
     @InjectRepository(ResourceTag) private tagRepo: Repository<ResourceTag>,
   ) {}
 
+
+  //generating presigned url for uploading a file to S3
   async generateUploadUrl(data: GetUploadUrlDto) {
     const {
       groupId,
@@ -69,7 +71,10 @@ export class StorageMsService {
     const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
 
     // Send a message to analytics microservice to log activity
-    await lastValueFrom(
+    try{
+      if (!userId)
+        return { uploadUrl};
+      await lastValueFrom(
       this.analyticsClient.send(
         { cmd: 'log_user_activity' },
         {
@@ -84,11 +89,18 @@ export class StorageMsService {
           },
         },
       ),
-    );
-    console.log(uploadUrl);
+      );
+    }
+    catch(err){
+      console.error('Error logging user activity:', err);
+      return { uploadUrl,resourceId };
+    }finally{
+      console.log('Upload URL generated:', uploadUrl);
     return { uploadUrl, resourceId };
+    }
   }
 
+  //generating presigned url for downloading a file from S3
   async generateDownloadUrl(resourceId: string, userId?: string) {
     const resource = await this.resourceRepo.findOne({ where: { resourceId } });
     if (!resource) throw new Error('Resource not found');
@@ -103,7 +115,8 @@ export class StorageMsService {
     });
 
     // Send a message to analytics microservice to log activity only if userId is provided
-    if (userId) {
+    try {
+      if (userId) {
       await lastValueFrom(
         this.analyticsClient.send(
           { cmd: 'log_user_activity' },
@@ -120,11 +133,18 @@ export class StorageMsService {
           },
         ),
       );
+      return { downloadUrl };
+      }
+    }catch (err) {
+      console.error('Error logging user activity:', err);
+      return { downloadUrl };
+    }finally{
+      console.log('Download URL generated:', downloadUrl);
+      return { downloadUrl };
     }
-
-    return { downloadUrl };
   }
 
+  //generating presigned url for uploading profile picture
   async generateProfilePicUploadUrl(
     userId: string,
     fileName: string,
@@ -161,6 +181,8 @@ export class StorageMsService {
     }
   }
 
+
+  //generating presigned url for downloading profile picture by userId
   async generateProfilePicDownloadUrl(userId: string) {
     try {
       const result = await lastValueFrom(
@@ -189,6 +211,7 @@ export class StorageMsService {
     }
   }
 
+  //Listing all resources in a group
   async listGroupResources(groupId: string) {
     try {
       const result = await this.resourceRepo.find({
@@ -206,6 +229,8 @@ export class StorageMsService {
     }
   }
 
+
+  //delete a resource by resourceId from DB + S3
   async deleteResource(resourceId: string) {
     const resource = await this.resourceRepo.findOne({ where: { resourceId } });
 
@@ -228,6 +253,8 @@ export class StorageMsService {
     return { success: true, message: 'Resource deleted successfully' };
   }
 
+
+  //fetching all resources by an array of group IDs -> useful for fetching resources for all groups a user belongs to
   async getResourcesByGroupIds(groups: string[]) {
     try {
       if (!groups || !Array.isArray(groups) || groups.length === 0) {
@@ -268,6 +295,7 @@ export class StorageMsService {
     }
   }
 
+  //delete all resources associated with a groupId from DB + S3 -> useful when a group is deleted
   async deleteResourcesByGroupId(groupId: string) {
     try {
       const resources = await this.resourceRepo.find({ where: { groupId } });
