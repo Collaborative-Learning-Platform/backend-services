@@ -15,6 +15,7 @@ import { GetUploadUrlDto } from './dto/getUploadUrl.dto';
 import { In } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
+import { ResourceMetadata } from 'libs/types/logger/logger-metadata.interface';
 
 @Injectable()
 export class StorageMsService {
@@ -25,7 +26,6 @@ export class StorageMsService {
     @InjectRepository(Resource) private resourceRepo: Repository<Resource>,
     @InjectRepository(ResourceTag) private tagRepo: Repository<ResourceTag>,
   ) {}
-
 
   //generating presigned url for uploading a file to S3
   async generateUploadUrl(data: GetUploadUrlDto) {
@@ -70,33 +70,33 @@ export class StorageMsService {
 
     const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
 
+    const resourceMetadata: ResourceMetadata = {
+      resourceId: resource.resourceId,
+      fileName: resource.fileName,
+      fileSize: resource.size,
+      contentType: resource.contentType,
+    };
+
     // Send a message to analytics microservice to log activity
-    try{
-      if (!userId)
-        return { uploadUrl};
+    try {
+      if (!userId) return { uploadUrl };
       await lastValueFrom(
-      this.analyticsClient.send(
-        { cmd: 'log_user_activity' },
-        {
-          user_id: userId,
-          category: 'RESOURCE',
-          activity_type: 'UPLOADED_RESOURCE',
-          metadata: {
-            resourceId: resource.resourceId,
-            fileName: resource.fileName,
-            fileSize: resource.size,
-            contentType: resource.contentType,
+        this.analyticsClient.send(
+          { cmd: 'log_user_activity' },
+          {
+            user_id: userId,
+            category: 'RESOURCE',
+            activity_type: 'UPLOADED_RESOURCE',
+            metadata: resourceMetadata,
           },
-        },
-      ),
+        ),
       );
-    }
-    catch(err){
+    } catch (err) {
       console.error('Error logging user activity:', err);
-      return { uploadUrl,resourceId };
-    }finally{
+      return { uploadUrl, resourceId };
+    } finally {
       console.log('Upload URL generated:', uploadUrl);
-    return { uploadUrl, resourceId };
+      return { uploadUrl, resourceId };
     }
   }
 
@@ -114,31 +114,33 @@ export class StorageMsService {
       expiresIn: 300,
     });
 
+    const resourceMetadata: ResourceMetadata = {
+      resourceId: resource.resourceId,
+      fileName: resource.fileName,
+      fileSize: resource.size,
+      contentType: resource.contentType,
+    };
+
     // Send a message to analytics microservice to log activity only if userId is provided
     try {
       if (userId) {
-      await lastValueFrom(
-        this.analyticsClient.send(
-          { cmd: 'log_user_activity' },
-          {
-            user_id: userId,
-            category: 'RESOURCE',
-            activity_type: 'DOWNLOADED_RESOURCE',
-            metadata: {
-              resourceId: resource.resourceId,
-              fileName: resource.fileName,
-              fileSize: resource.size,
-              contentType: resource.contentType,
+        await lastValueFrom(
+          this.analyticsClient.send(
+            { cmd: 'log_user_activity' },
+            {
+              user_id: userId,
+              category: 'RESOURCE',
+              activity_type: 'DOWNLOADED_RESOURCE',
+              metadata: resourceMetadata,
             },
-          },
-        ),
-      );
-      return { downloadUrl };
+          ),
+        );
+        return { downloadUrl };
       }
-    }catch (err) {
+    } catch (err) {
       console.error('Error logging user activity:', err);
       return { downloadUrl };
-    }finally{
+    } finally {
       console.log('Download URL generated:', downloadUrl);
       return { downloadUrl };
     }
@@ -180,7 +182,6 @@ export class StorageMsService {
       return { success: false, message: error.message };
     }
   }
-
 
   //generating presigned url for downloading profile picture by userId
   async generateProfilePicDownloadUrl(userId: string) {
@@ -229,7 +230,6 @@ export class StorageMsService {
     }
   }
 
-
   //delete a resource by resourceId from DB + S3
   async deleteResource(resourceId: string) {
     const resource = await this.resourceRepo.findOne({ where: { resourceId } });
@@ -252,7 +252,6 @@ export class StorageMsService {
 
     return { success: true, message: 'Resource deleted successfully' };
   }
-
 
   //fetching all resources by an array of group IDs -> useful for fetching resources for all groups a user belongs to
   async getResourcesByGroupIds(groups: string[]) {
