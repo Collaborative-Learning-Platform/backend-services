@@ -505,19 +505,41 @@ export class AnalyticsMsService {
 
   //Helper funciton to get elapsed time from activity
   private getTimeDifference(createdAt: Date | string): string {
+    // Get current time in local timezone
     const now = new Date();
     const createdDate = new Date(createdAt);
-    const diffMs = now.getTime() - createdDate.getTime();
+
+    // Convert createdAt from UTC to local timezone for comparison
+    const localOffset = now.getTimezoneOffset() * 60000; // offset in milliseconds
+    const localCreatedDate = new Date(createdDate.getTime() - localOffset);
+
+    // Calculate difference using local times
+    const diffMs = now.getTime() - localCreatedDate.getTime();
+
+    // // Debug logs to track time calculation
+    // console.log('Time calculation debug:', {
+    //   nowLocal: now.toISOString(),
+    //   createdAtUTC: createdDate.toISOString(),
+    //   createdAtLocal: localCreatedDate.toISOString(),
+    //   timezoneOffset: now.getTimezoneOffset(),
+    //   diffMs,
+    //   diffMinutes: Math.floor(diffMs / (1000 * 60)),
+    //   diffHours: Math.floor(diffMs / (1000 * 60 * 60)),
+    //   diffDays: Math.floor(diffMs / (1000 * 60 * 60 * 24)),
+    // });
 
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffHours = Math.floor(
       (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
     );
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
     if (diffDays > 0) {
       return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
     } else if (diffHours > 0) {
       return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else if (diffMinutes > 0) {
+      return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
     } else {
       return 'Just now';
     }
