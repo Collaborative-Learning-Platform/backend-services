@@ -70,6 +70,13 @@ export class StorageMsService {
 
     const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
 
+    const resourceMetadata: ResourceMetadata = {
+      resourceId: resource.resourceId,
+      fileName: resource.fileName,
+      fileSize: resource.size,
+      contentType: resource.contentType,
+    };
+
     // Send a message to analytics microservice to log activity
     try {
       if (!userId) return { uploadUrl };
@@ -106,6 +113,13 @@ export class StorageMsService {
     const downloadUrl = await getSignedUrl(this.s3, command, {
       expiresIn: 300,
     });
+
+    const resourceMetadata: ResourceMetadata = {
+      resourceId: resource.resourceId,
+      fileName: resource.fileName,
+      fileSize: resource.size,
+      contentType: resource.contentType,
+    };
 
     // Send a message to analytics microservice to log activity only if userId is provided
     try {
