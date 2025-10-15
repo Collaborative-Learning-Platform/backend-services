@@ -19,7 +19,7 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
         name: 'AUTH_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: isDocker ? 'auth-service' : '127.0.0.1',
+          host: isDocker ? 'auth-ms' : '127.0.0.1',
           port: 4000,
         },
       },
