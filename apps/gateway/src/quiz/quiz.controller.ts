@@ -91,7 +91,7 @@ export class QuizController {
           groupId: group.groupId,
           groupName: group.groupName,
           workspaceId: group.workspaceId,
-          quizzes: quizzes?.success ? quizzes.data || [] : [],
+          quizzes: quizzes?.success? quizzes.data || [] : [],
         };
 
       } catch (error){
@@ -99,7 +99,7 @@ export class QuizController {
           groupId: group.groupId,
           groupName: group.groupName,
           workspaceId: group.workspaceId,
-          workspaceName: group.workspace_name,
+          workspaceName: group.workspaceName,
           quizzes: [],
         };
       }
