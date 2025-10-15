@@ -79,10 +79,10 @@ export class QuizMsService {
     }
   }
 
+
   async getAllQuizzes(): Promise<Quiz[]> {
     try {
       return this.quizRepo.find({
-        // relations: ['group', 'createdBy'],
         order: { deadline: 'ASC' },
       });
     } catch (error) {
@@ -162,7 +162,7 @@ export class QuizMsService {
       const group = await lastValueFrom(
         this.workspaceService.send({ cmd: 'get_group_details' }, groupId),
       );
-      // console.log(group);
+      console.log(group);
       if (!group) {
         return {
           success: false,
@@ -173,7 +173,7 @@ export class QuizMsService {
       const groupQuizzes = await this.quizRepo.find({
         where: { groupId: groupId },
       });
-      // console.log(groupQuizzes);
+      console.log(groupQuizzes);
       return {
         success: true,
         statusCode: 200,

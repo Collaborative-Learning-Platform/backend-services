@@ -20,6 +20,7 @@ import { CreateQuizAttemptDto } from './dto/create-quiz-attempt.dto';
 export class QuizController {
   constructor(
     @Inject('QUIZ_SERVICE') private readonly quizClient: ClientProxy,
+    @Inject('WORKSPACE_SERVICE') private readonly workspaceClient: ClientProxy,
   ) {}
 
   //Quiz operations
@@ -61,6 +62,67 @@ export class QuizController {
     );
 
     return res.json(response);
+  }
+
+  @Get('user-group/:userId')
+  async getQuizzesByUserGroups(
+    @Param('userId') userId: string,
+    @Res() res:Response,
+  ){
+    const userGroupsResponse = await lastValueFrom(
+      this.workspaceClient.send({ cmd: 'get_groups_by_user' }, {userId}),
+    );
+    // console.log('User Groups Response:', userGroupsResponse);
+    if (!userGroupsResponse?.success || !userGroupsResponse?.data) {
+      return res.json({
+        success: false,
+        message: 'Could not fetch user groups',
+        data: { groups: [], quizzes: [] },
+      });
+    }
+    const userGroups = userGroupsResponse.data;
+   
+    const quizPromises = userGroups.map(async (group) =>{
+      try{
+        const quizzes = await lastValueFrom(
+          this.quizClient.send({ cmd: 'get_quizzes_by_group' }, group.groupId),
+        );
+        return {
+          groupId: group.groupId,
+          groupName: group.groupName,
+          workspaceId: group.workspaceId,
+          quizzes: quizzes?.success ? quizzes.data || [] : [],
+        };
+
+      } catch (error){
+        return {
+          groupId: group.groupId,
+          groupName: group.groupName,
+          workspaceId: group.workspaceId,
+          workspaceName: group.workspace_name,
+          quizzes: [],
+        };
+      }
+    })
+    
+    const quizResults = await Promise.all(quizPromises);
+    console.log('Quiz Results:', quizResults);
+    const userQuizzes = quizResults.flatMap((result) =>
+      result.quizzes.map((quiz: any) => ({
+        ...quiz,
+        groupName: result.groupName,
+        
+      })),
+    );
+    return res.json({
+      success: true,
+      message: 'Successfully fetched quizzes from user groups',
+      data: {
+        userId,
+        totalQuizzes: userQuizzes.length,
+        quizzes: userQuizzes,
+      },
+    });
   }
 
   @Get('group/:groupId')
@@ -168,7 +230,7 @@ export class QuizController {
 
   @Get('attempt/:quizId')
   async getQuizAttemptsByQuiz(
-    @Param ('quizId') quizId: string,
+    @Param('quizId') quizId: string,
     @Res() res: Response,
   ) {
     const response = await lastValueFrom(
