@@ -74,15 +74,3 @@ export interface QuizMetadata {
   groupId: string;
   description: string;
 }
-
-export interface WhiteboardMetadata {
-  whiteboardId: string;
-  sessionId?: string;
-  participants?: string[];
-}
-
-export interface DocumentMetadata {
-  documentId: string;
-  documentName: string;
-  collaborators?: string[];
-}

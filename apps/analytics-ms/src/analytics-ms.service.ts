@@ -323,14 +323,14 @@ export class AnalyticsMsService {
         .limit(limit)
         .getRawMany();
 
-      // Debug log to see raw activities with metadata
-      activities.forEach((activity) => {
-        console.log('Raw activity with metadata:', {
-          type: activity.activity_type,
-          metadata: activity.metadata,
-          metadataType: typeof activity.metadata,
-        });
-      });
+      // // Debug log to see raw activities with metadata
+      // activities.forEach((activity) => {
+      //   console.log('Raw activity with metadata:', {
+      //     type: activity.activity_type,
+      //     metadata: activity.metadata,
+      //     metadataType: typeof activity.metadata,
+      //   });
+      // });
 
       // Format the response data using the Activity Message Map and metadata
       const formattedActivities = activities.map((activity) => {
@@ -387,6 +387,7 @@ export class AnalyticsMsService {
               const groupMetadata = activity.metadata as GroupMetadata;
               description = `${description} "${groupMetadata.name}"`;
             }
+            break;
           case ActivityType.CREATED_WORKSPACE:
             if (metadata) {
               const workspaceMetadata =
@@ -405,10 +406,11 @@ export class AnalyticsMsService {
               const groupMetadata = activity.metadata as GroupMetadata;
               description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
             }
+            break;
           case ActivityType.POSTED_MESSAGE:
             if (metadata) {
               const chatMetadata = activity.metadata as ChatMetadata;
-              description = `${description} in group "${chatMetadata.groupName}`;
+              description = `${description} in group "${chatMetadata.groupName}"`;
             }
             break;
           case ActivityType.GENERATED_STUDY_PLAN:
@@ -443,7 +445,7 @@ export class AnalyticsMsService {
       });
 
       const activitiesWithTime = formattedActivities.map((activity) => {
-        console.log('Backend activity:', activity); // Debug log
+        // console.log('Backend activity:', activity); // Debug log
         return {
           id: activity.id,
           category: activity.activity_category || activity.category, // Try both possible field names
