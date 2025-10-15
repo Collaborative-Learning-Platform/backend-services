@@ -323,14 +323,14 @@ export class AnalyticsMsService {
         .limit(limit)
         .getRawMany();
 
-      // Debug log to see raw activities with metadata
-      activities.forEach((activity) => {
-        console.log('Raw activity with metadata:', {
-          type: activity.activity_type,
-          metadata: activity.metadata,
-          metadataType: typeof activity.metadata,
-        });
-      });
+      // // Debug log to see raw activities with metadata
+      // activities.forEach((activity) => {
+      //   console.log('Raw activity with metadata:', {
+      //     type: activity.activity_type,
+      //     metadata: activity.metadata,
+      //     metadataType: typeof activity.metadata,
+      //   });
+      // });
 
       // Format the response data using the Activity Message Map and metadata
       const formattedActivities = activities.map((activity) => {
@@ -444,7 +444,7 @@ export class AnalyticsMsService {
       });
 
       const activitiesWithTime = formattedActivities.map((activity) => {
-        console.log('Backend activity:', activity); // Debug log
+        // console.log('Backend activity:', activity); // Debug log
         return {
           id: activity.id,
           category: activity.activity_category || activity.category, // Try both possible field names
