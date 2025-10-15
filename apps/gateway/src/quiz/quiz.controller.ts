@@ -106,7 +106,7 @@ export class QuizController {
     })
     
     const quizResults = await Promise.all(quizPromises);
-    console.log('Quiz Results:', quizResults);
+    
     const userQuizzes = quizResults.flatMap((result) =>
       result.quizzes.map((quiz: any) => ({
         ...quiz,
