@@ -67,12 +67,12 @@ export class QuizController {
   @Get('user-group/:userId')
   async getQuizzesByUserGroups(
     @Param('userId') userId: string,
-    @Res() res:Response,
+    @Res() res: Response,
   ){
     const userGroupsResponse = await lastValueFrom(
       this.workspaceClient.send({ cmd: 'get_groups_by_user' }, {userId}),
     );
-    // console.log('User Groups Response:', userGroupsResponse);
+    
     if (!userGroupsResponse?.success || !userGroupsResponse?.data) {
       return res.json({
         success: false,
@@ -82,7 +82,9 @@ export class QuizController {
     }
     const userGroups = userGroupsResponse.data;
    
-    const quizPromises = userGroups.map(async (group) =>{
+
+    const quizPromises = userGroups.map(async (group) => {
+
       try{
         const quizzes = await lastValueFrom(
           this.quizClient.send({ cmd: 'get_quizzes_by_group' }, group.groupId),
@@ -91,7 +93,7 @@ export class QuizController {
           groupId: group.groupId,
           groupName: group.groupName,
           workspaceId: group.workspaceId,
-          quizzes: quizzes?.success ? quizzes.data || [] : [],
+          quizzes: quizzes?.success? quizzes.data || [] : [],
         };
 
       } catch (error){
@@ -99,14 +101,14 @@ export class QuizController {
           groupId: group.groupId,
           groupName: group.groupName,
           workspaceId: group.workspaceId,
-          workspaceName: group.workspace_name,
+          workspaceName: group.workspaceName,
           quizzes: [],
         };
       }
     })
     
     const quizResults = await Promise.all(quizPromises);
-    console.log('Quiz Results:', quizResults);
+    
     const userQuizzes = quizResults.flatMap((result) =>
       result.quizzes.map((quiz: any) => ({
         ...quiz,
