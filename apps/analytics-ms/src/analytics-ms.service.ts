@@ -394,6 +394,7 @@ export class AnalyticsMsService {
                 activity.metadata as WorkspaceCreateMetadata;
               description = `${description} "${workspaceMetadata.workspaceName}"`;
             }
+            break;
           case ActivityType.CREATED_GROUP:
             if (metadata) {
               const groupMetadata = activity.metadata as GroupMetadata;
