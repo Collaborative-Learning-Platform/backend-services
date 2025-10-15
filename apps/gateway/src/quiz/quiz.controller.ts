@@ -67,7 +67,7 @@ export class QuizController {
   @Get('user-group/:userId')
   async getQuizzesByUserGroups(
     @Param('userId') userId: string,
-    @Res() res:Response,
+    @Res() res: Response,
   ){
     const userGroupsResponse = await lastValueFrom(
       this.workspaceClient.send({ cmd: 'get_groups_by_user' }, {userId}),
