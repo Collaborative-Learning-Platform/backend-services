@@ -18,7 +18,6 @@ async function bootstrap() {
     },
   );
 
-  // Apply global pipes for validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -27,8 +26,6 @@ async function bootstrap() {
     }),
   );
 
-  // Apply global exception filter
-  // app.useGlobalFilters(new AllExceptionsFilter());
 
   await app.listen();
   console.log('Quiz microservice is listening on TCP port 4004');
