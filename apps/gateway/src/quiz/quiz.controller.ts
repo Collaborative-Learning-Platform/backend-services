@@ -82,7 +82,9 @@ export class QuizController {
     }
     const userGroups = userGroupsResponse.data;
    
-    const quizPromises = userGroups.map(async (group) =>{
+
+    const quizPromises = userGroups.map(async (group) => {
+
       try{
         const quizzes = await lastValueFrom(
           this.quizClient.send({ cmd: 'get_quizzes_by_group' }, group.groupId),
