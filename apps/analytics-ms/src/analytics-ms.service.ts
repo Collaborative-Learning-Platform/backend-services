@@ -387,13 +387,13 @@ export class AnalyticsMsService {
               const groupMetadata = activity.metadata as GroupMetadata;
               description = `${description} "${groupMetadata.name}"`;
             }
+            break;
           case ActivityType.CREATED_WORKSPACE:
             if (metadata) {
               const workspaceMetadata =
                 activity.metadata as WorkspaceCreateMetadata;
               description = `${description} "${workspaceMetadata.workspaceName}"`;
             }
-            break;
           case ActivityType.CREATED_GROUP:
             if (metadata) {
               const groupMetadata = activity.metadata as GroupMetadata;
@@ -405,10 +405,11 @@ export class AnalyticsMsService {
               const groupMetadata = activity.metadata as GroupMetadata;
               description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
             }
+            break;
           case ActivityType.POSTED_MESSAGE:
             if (metadata) {
               const chatMetadata = activity.metadata as ChatMetadata;
-              description = `${description} in group "${chatMetadata.groupName}`;
+              description = `${description} in group "${chatMetadata.groupName}"`;
             }
             break;
           case ActivityType.GENERATED_STUDY_PLAN:
