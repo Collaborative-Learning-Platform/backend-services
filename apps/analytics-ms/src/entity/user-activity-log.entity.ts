@@ -2,7 +2,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -40,35 +39,35 @@ export enum ActivityType {
   // Admin-side
   DELETED_GROUP = 'DELETED_GROUP', // Done
   CREATED_WORKSPACE = 'CREATED_WORKSPACE', // Done
-  DELETED_WORKSPACE = 'DELETED_WORKSPACE',
+  // DELETED_WORKSPACE = 'DELETED_WORKSPACE',
 }
 
 export const ActivityMessageMap: Record<ActivityType, string> = {
   // Common
-  [ActivityType.LOGIN]: 'logged in',
-  [ActivityType.DOWNLOADED_RESOURCE]: 'downloaded  resource',
-  [ActivityType.UPLOADED_RESOURCE]: 'uploaded  resource',
-  [ActivityType.GENERATED_FLASHCARDS]: 'generated flashcards',
-  [ActivityType.DELETED_FLASHCARDS]: 'deleted flashcards',
-  [ActivityType.JOINED_WHITEBOARD]: 'collaborated on whiteboard',
-  [ActivityType.JOINED_DOCUMENT]: 'collaborated on Document',
-  [ActivityType.ADDED_TO_GROUP]: 'was added to  group',
-  [ActivityType.ADDED_TO_WORKSPACE]: 'was added to  workspace',
-  [ActivityType.CREATED_GROUP]: 'created  new group',
-  [ActivityType.POSTED_MESSAGE]: 'posted  message',
+  [ActivityType.LOGIN]: 'Logged in',
+  [ActivityType.DOWNLOADED_RESOURCE]: 'Downloaded  resource', //Done
+  [ActivityType.UPLOADED_RESOURCE]: 'Uploaded  resource', //Done
+  [ActivityType.GENERATED_FLASHCARDS]: 'Generated flashcards', //Done
+  [ActivityType.DELETED_FLASHCARDS]: 'Deleted flashcards', //Done
+  [ActivityType.JOINED_WHITEBOARD]: 'Collaborated on whiteboard', // Done
+  [ActivityType.JOINED_DOCUMENT]: 'Collaborated on document', // Done
+  [ActivityType.ADDED_TO_GROUP]: 'Was added to  group', // Done
+  [ActivityType.ADDED_TO_WORKSPACE]: 'Was added to  workspace', // Done
+  [ActivityType.CREATED_GROUP]: 'Created  new group',
+  [ActivityType.POSTED_MESSAGE]: 'Posted  message',
 
   // Student-side(user)
-  [ActivityType.STARTED_QUIZ]: 'started quiz',
-  [ActivityType.SUBMITTED_QUIZ]: 'submitted quiz',
-  [ActivityType.GENERATED_STUDY_PLAN]: 'generated study plan',
+  [ActivityType.STARTED_QUIZ]: 'Started quiz',
+  [ActivityType.SUBMITTED_QUIZ]: 'Submitted quiz',
+  [ActivityType.GENERATED_STUDY_PLAN]: 'Generated new study plan',
 
   // Tutor-sid
-  [ActivityType.CREATED_QUIZ]: 'created quiz',
+  [ActivityType.CREATED_QUIZ]: 'Created quiz',
 
   // Admin-side
-  [ActivityType.DELETED_GROUP]: 'deleted group',
-  [ActivityType.CREATED_WORKSPACE]: 'created workspace',
-  [ActivityType.DELETED_WORKSPACE]: 'deleted workspace',
+  [ActivityType.DELETED_GROUP]: 'Deleted group',
+  [ActivityType.CREATED_WORKSPACE]: 'Created workspace',
+  // [ActivityType.DELETED_WORKSPACE]: 'deleted workspace',
 };
 
 export const RoleActivityMap = {
@@ -104,7 +103,7 @@ export const RoleActivityMap = {
     ActivityType.LOGIN,
     ActivityType.CREATED_WORKSPACE,
     ActivityType.DELETED_GROUP,
-    ActivityType.DELETED_WORKSPACE,
+    // ActivityType.DELETED_WORKSPACE,
     ActivityType.CREATED_GROUP,
   ],
 } as const;
