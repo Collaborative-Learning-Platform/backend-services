@@ -30,7 +30,6 @@ describe('Quiz Microservice Integration Tests', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
-        // Use your existing PostgreSQL configuration
         TypeOrmModule.forRoot({
           type: 'postgres',
           host: process.env.DB_HOST,
@@ -71,7 +70,6 @@ describe('Quiz Microservice Integration Tests', () => {
     await app.close();
   });
 
-  // Add a simple connectivity test first
   describe('Database and Service Connectivity', () => {
     it('should connect to database and service', async () => {
       expect(app).toBeDefined();
