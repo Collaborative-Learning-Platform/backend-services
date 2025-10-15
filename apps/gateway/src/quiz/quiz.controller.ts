@@ -72,7 +72,7 @@ export class QuizController {
     const userGroupsResponse = await lastValueFrom(
       this.workspaceClient.send({ cmd: 'get_groups_by_user' }, {userId}),
     );
-    // console.log('User Groups Response:', userGroupsResponse);
+    
     if (!userGroupsResponse?.success || !userGroupsResponse?.data) {
       return res.json({
         success: false,
