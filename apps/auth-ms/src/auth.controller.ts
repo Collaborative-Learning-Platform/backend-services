@@ -33,6 +33,13 @@ export class AuthController {
     return this.authService.forgotPassword(data.email);
   }
 
+  @MessagePattern({ cmd: 'auth_reset_password' })
+  async resetPassword(@Payload() data: { token: string; newPassword: string }) {
+    return this.authService.resetPassword(data.token, data.newPassword);
+  }
+
+
+
 
   @MessagePattern({ cmd: 'auth_get_user' })
   async getUser(@Payload() data: { userId: string }) {
@@ -69,7 +76,7 @@ export class AuthController {
       throw new Error('Invalid file buffer received');
     }
 
-    // console.log('File buffer size (bytes):', buffer.length);    
+    
     return this.authService.processFileAndCreateUsers({
       originalname: fileData.originalname,
       buffer,
