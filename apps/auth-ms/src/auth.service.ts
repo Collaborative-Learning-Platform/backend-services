@@ -32,6 +32,11 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+
+// ===================================================================================================================
+//login and token related functions
+
+
   async login(credentials: LoginDto) {
     const user = await this.userRepository.findOne({
       where: { email: credentials.email },
@@ -115,6 +120,13 @@ export class AuthService {
     };
   }
 
+
+
+// ===================================================================================================================
+//user retrieval related functions
+
+
+
   async getUser(userId: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
@@ -189,6 +201,9 @@ export class AuthService {
 
 
 
+// ===================================================================================================================
+//profile picture related functions
+
   async storeProfilePicUrl(userId: string, profilePicUrl: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
@@ -209,8 +224,6 @@ export class AuthService {
       message: 'Profile picture updated successfully',
     };
   }
-
-
   
   async getProfilePictureUrl(userId: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -230,7 +243,11 @@ export class AuthService {
   }
 
 
-  //password reset
+// ===================================================================================================================
+//password reset related functions
+
+
+
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email: email } });
     if (!user) {
@@ -261,7 +278,7 @@ export class AuthService {
     const { subject, html } = resetPasswordTemplate(
       user.name,
       user.email,
-      `http://localhost:5173/reset-password?token=${token}`,
+      `https://learniedu.vercel.app/reset-password?token=${token}`,
     );
 
     try {
@@ -341,10 +358,9 @@ export class AuthService {
   }
 
 
+// ===================================================================================================================
+//User Bulk addition function
 
-
-
-  //User Bulk addition function
   async processFileAndCreateUsers(fileData: {
     originalname: string;
     buffer: Buffer;
@@ -427,13 +443,11 @@ export class AuthService {
 
 
 
-
-
-
+//Supportive functions  
+// ===================================================================================================================
 
 
   //supportive functions for token generation and storage
-
   async generateToken(userId: string) {
     const access_token = this.jwtService.sign({ userId: userId });
 
@@ -478,13 +492,7 @@ export class AuthService {
     return this.generateToken(refreshToken.userId);
   }
 
-
-
-
-
-
-
-
+// ===================================================================================================================
 
   //supportive functions for bulk user addition
 
