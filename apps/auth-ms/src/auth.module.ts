@@ -16,6 +16,14 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
   imports: [
     ClientsModule.register([
       {
+        name: 'USER_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: isDocker ? 'user-ms' : '127.0.0.1',
+          port: 4001,
+        },
+      },
+      {
         name: 'NOTIFICATION_SERVICE',
         transport: Transport.TCP,
         options: {
