@@ -229,6 +229,35 @@ export class QuizMsService {
     }
   }
 
+  async getQuizzesByUserGroups(userGroupIds: string[]) {
+    try{
+      if (!userGroupIds || userGroupIds.length === 0) {
+        return {
+          success: true,
+          statusCode: 200,
+          data: [],
+          message: 'No user groups provided',
+        };
+      }
+      const quizzes = await this.quizRepo
+        .createQueryBuilder('quiz')
+        .where('quiz."groupId" IN (:...userGroupIds)', { userGroupIds })
+        .andWhere('quiz.deadline > NOW()')
+        .orderBy('quiz.deadline', 'DESC')
+        .limit(4)
+        .getMany();
+      console.log(quizzes);
+      return {
+        success: true,
+        statusCode: 200,
+        data: quizzes,
+      };
+      
+    } catch (error) {
+      throw new BadRequestException('Error fetching quizzes: ' + error.message);
+    }
+  }
+
   //Quiz Question related services
   async createQuizQuestion(createQuizQuestionDTo: CreateQuizQuestionDto) {
     try {
