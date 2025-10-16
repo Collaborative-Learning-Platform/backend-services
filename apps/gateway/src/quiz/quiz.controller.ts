@@ -64,67 +64,28 @@ export class QuizController {
     return res.json(response);
   }
 
-  @Get('user-group/:userId')
+  @Post('user-quizzes')
   async getQuizzesByUserGroups(
-    @Param('userId') userId: string,
+    @Body() body: { userGroupIds: string[] },
     @Res() res: Response,
-  ){
-    const userGroupsResponse = await lastValueFrom(
-      this.workspaceClient.send({ cmd: 'get_groups_by_user' }, {userId}),
+  ) {
+    const { userGroupIds } = body;
+    // console.log('Received userGroupIds:', userGroupIds);
+    const response = await lastValueFrom(
+      this.quizClient.send(
+        { cmd: 'get_quizzes_by_user_groups' },
+        { userGroupIds },
+      ),
     );
-    
-    if (!userGroupsResponse?.success || !userGroupsResponse?.data) {
-      return res.json({
+    console.log('Response from quiz service:', response);
+    if (response?.error) {
+      return {
         success: false,
-        message: 'Could not fetch user groups',
-        data: { groups: [], quizzes: [] },
-      });
+        message: 'Could not fetch quizzes',
+        data: { quizzes: [] },
+      };
     }
-    const userGroups = userGroupsResponse.data;
-   
-
-    const quizPromises = userGroups.map(async (group) => {
-
-      try{
-        const quizzes = await lastValueFrom(
-          this.quizClient.send({ cmd: 'get_quizzes_by_group' }, group.groupId),
-        );
-        return {
-          groupId: group.groupId,
-          groupName: group.groupName,
-          workspaceId: group.workspaceId,
-          quizzes: quizzes?.success? quizzes.data || [] : [],
-        };
-
-      } catch (error){
-        return {
-          groupId: group.groupId,
-          groupName: group.groupName,
-          workspaceId: group.workspaceId,
-          workspaceName: group.workspaceName,
-          quizzes: [],
-        };
-      }
-    })
-    
-    const quizResults = await Promise.all(quizPromises);
-    
-    const userQuizzes = quizResults.flatMap((result) =>
-      result.quizzes.map((quiz: any) => ({
-        ...quiz,
-        groupName: result.groupName,
-        
-      })),
-    );
-    return res.json({
-      success: true,
-      message: 'Successfully fetched quizzes from user groups',
-      data: {
-        userId,
-        totalQuizzes: userQuizzes.length,
-        quizzes: userQuizzes,
-      },
-    });
+    return res.json(response);
   }
 
   @Get('group/:groupId')
