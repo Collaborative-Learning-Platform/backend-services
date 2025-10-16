@@ -8,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entity/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { RefreshToken } from './entity/refreshToken.entity';
+import { PasswordResetToken } from './entity/password.reset.token';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
 const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
@@ -48,13 +49,13 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [User, RefreshToken],
+      entities: [User, RefreshToken, PasswordResetToken],
       synchronize: true,
       ssl: {
         rejectUnauthorized: false,
       },
     }),
-    TypeOrmModule.forFeature([User, RefreshToken]),
+    TypeOrmModule.forFeature([User, RefreshToken, PasswordResetToken]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1h' },

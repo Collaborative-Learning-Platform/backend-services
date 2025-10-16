@@ -14,6 +14,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { welcomeTemplate } from './templates/welcomeMail';
 import { resetPasswordTemplate } from './templates/resetPasswordMail';
 import { lastValueFrom } from 'rxjs';
+import { PasswordResetToken } from './entity/password.reset.token';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,8 @@ export class AuthService {
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(RefreshToken)
     private refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(PasswordResetToken)
+    private passwordResetTokenRepository: Repository<PasswordResetToken>,
     @Inject('NOTIFICATION_SERVICE')
     private readonly notificationClient: ClientProxy,
     @Inject('ANALYTICS_SERVICE')
@@ -30,6 +33,11 @@ export class AuthService {
 
     private jwtService: JwtService,
   ) {}
+
+
+// ===================================================================================================================
+//login and token related functions
+
 
   async login(credentials: LoginDto) {
     const user = await this.userRepository.findOne({
@@ -123,6 +131,13 @@ export class AuthService {
     };
   }
 
+
+
+// ===================================================================================================================
+//user retrieval related functions
+
+
+
   async getUser(userId: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
@@ -195,6 +210,11 @@ export class AuthService {
     }
   }
 
+
+
+// ===================================================================================================================
+//profile picture related functions
+
   async storeProfilePicUrl(userId: string, profilePicUrl: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
@@ -215,7 +235,7 @@ export class AuthService {
       message: 'Profile picture updated successfully',
     };
   }
-
+  
   async getProfilePictureUrl(userId: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
@@ -233,6 +253,12 @@ export class AuthService {
     };
   }
 
+
+// ===================================================================================================================
+//password reset related functions
+
+
+
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email: email } });
     if (!user) {
@@ -243,11 +269,27 @@ export class AuthService {
       };
     }
 
+    const token = uuidv4();
+    const existingToken = await this.passwordResetTokenRepository.findOne({ where: { userId: user.id } });
+    if (existingToken) {
+      existingToken.token = token;
+      existingToken.expiresAt = new Date(Date.now() + 10 * 60000); //10 min
+      await this.passwordResetTokenRepository.save(existingToken);
+    } else {
+      const passwordResetToken = this.passwordResetTokenRepository.create({
+        userId: user.id,
+        token: token,
+        expiresAt: new Date(Date.now() + 10 * 60000), //10 min
+      });
+      await this.passwordResetTokenRepository.save(passwordResetToken);
+    }
+
+
     // Send password reset email
     const { subject, html } = resetPasswordTemplate(
       user.name,
       user.email,
-      'http://example.com/reset?token=some-token',
+      `https://learniedu.vercel.app/reset-password?token=${token}`,
     );
 
     try {
@@ -268,6 +310,67 @@ export class AuthService {
       message: 'Password reset email sent successfully',
     };
   }
+
+
+  async resetPassword(token: string, newPassword: string) {
+
+    try{
+       // Validate inputs
+       if (!token) {
+         return {
+           success: false,
+           message: 'Token is required',
+           status: 400,
+         };
+       }
+
+       if (!newPassword || typeof newPassword !== 'string' || newPassword.trim() === '') {
+         return {
+           success: false,
+           message: 'New password is required',
+           status: 400,
+         };
+       }
+
+       const resetToken = await this.passwordResetTokenRepository.findOne({ where: { token: token, expiresAt: MoreThan(new Date()) } });
+       console.log(resetToken) 
+       if (!resetToken) {
+          return {
+            success: false,
+            message: 'Invalid or expired token',
+            status: 400,
+          };
+        }
+        const user = await this.userRepository.findOne({ where: { id: resetToken.userId } });
+          if (!user) {
+            return {
+              success: false,
+              message: 'User not found',
+              status: 400,
+            };
+          }
+          user.hashed_password = await bcrypt.hash(newPassword, 10);
+          await this.userRepository.save(user);
+          await this.passwordResetTokenRepository.delete({ userId: user.id });
+
+          return {
+            success: true,
+            message: 'Password reset successfully',
+          };
+
+     }catch(err){
+        console.log(err)
+        return {
+          success: false,
+          message: 'Failed to reset password',
+          error: err.message,
+        };
+     }    
+  }
+
+
+// ===================================================================================================================
+//User Bulk addition function
 
   async processFileAndCreateUsers(fileData: {
     originalname: string;
@@ -349,8 +452,13 @@ export class AuthService {
     };
   }
 
-  //supportive functions for token generation and storage
 
+
+//Supportive functions  
+// ===================================================================================================================
+
+
+  //supportive functions for token generation and storage
   async generateToken(userId: string) {
     const access_token = this.jwtService.sign({ userId: userId });
 
@@ -394,6 +502,8 @@ export class AuthService {
 
     return this.generateToken(refreshToken.userId);
   }
+
+// ===================================================================================================================
 
   //supportive functions for bulk user addition
 
