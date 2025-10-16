@@ -35,6 +35,11 @@ export class QuizMsController {
     return this.quizMsService.getQuizByGroupId(groupId);
   }
 
+  @MessagePattern({cmd:'get_quizzes_by_user_groups'})
+  getQuizzesByUserGroups(data: { userGroupIds: string[] }) {
+    return this.quizMsService.getQuizzesByUserGroups(data.userGroupIds);
+  }
+
   @MessagePattern({ cmd: 'update_quiz' })
   updateQuiz(
     @Payload() data: { quizId: string; updateQuizDto: UpdateQuizDto },
