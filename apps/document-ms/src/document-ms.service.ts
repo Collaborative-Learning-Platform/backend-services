@@ -26,6 +26,7 @@ export class DocumentMsService {
       title: doc.title,
       groupId: doc.groupId,
       createdBy: doc.createdBy,
+      lastEdited: doc.lastEdited,
     };
   }
 
@@ -36,6 +37,7 @@ export class DocumentMsService {
       title: doc.title,
       groupId: doc.groupId,
       createdBy: doc.createdBy,
+      lastEdited: doc.lastEdited,
       contributorIds: doc.contributorIds || [],
     };
   }
@@ -60,7 +62,7 @@ export class DocumentMsService {
       const name = `${dto.groupId}-${Date.now().toString(36)}`;
       const doc = this.docRepo.create({
         name,
-        title: dto.title,
+        title: dto.title || 'Untitled Document',
         groupId: dto.groupId,
         createdBy: dto.createdBy,
         contributorIds: [dto.createdBy],
@@ -121,12 +123,12 @@ export class DocumentMsService {
 
   async listByGroup(
     groupId: string,
-  ): Promise<ServiceResponse<DocumentResponseDto[]>> {
+  ): Promise<ServiceResponse<MyDocumentsResponseDto[]>> {
     const docs = await this.docRepo.findBy({ groupId });
     return {
       success: true,
       message: 'Documents fetched successfully',
-      data: docs.map((doc) => this.toResponseDto(doc)),
+      data: docs.map((doc) => this.toMyDocumentsResponseDto(doc)),
     };
   }
 
@@ -154,7 +156,7 @@ export class DocumentMsService {
       type GroupResult = {
         groupId: string;
         name: string;
-        documents: DocumentResponseDto[];
+        documents: MyDocumentsResponseDto[];
       };
       type WorkspaceResult = {
         workspaceId: string;
@@ -266,7 +268,6 @@ export class DocumentMsService {
       data: this.toResponseDto(updated),
     };
   }
-
 
   async deleteByGroup(groupId: string): Promise<ServiceResponse<any>> {
     try {

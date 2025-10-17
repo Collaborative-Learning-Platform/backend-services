@@ -4,6 +4,7 @@ export class DocumentResponseDto {
   title: string;
   groupId: string;
   createdBy: string;
+  lastEdited: Date;
 }
 
 export class ContributorResponseDto extends DocumentResponseDto {
