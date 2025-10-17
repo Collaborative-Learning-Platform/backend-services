@@ -3,6 +3,8 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  PrimaryColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 export enum UserRole {
@@ -36,4 +38,55 @@ export class User {
 
   @Column({ default: true })
   first_time_user: boolean;
+}
+
+export enum CursorType {
+  DEFAULT = 'default',
+  TEXT = 'text',
+  RESIZE_CORNER = 'resize-corner',
+  NESW_ROTATE = 'nesw-rotate',
+}
+
+export enum ThemeMode {
+  LIGHT = 'light',
+  DARK = 'dark',
+}
+
+@Entity()
+export class UserPreferences {
+  @PrimaryColumn('uuid')
+  user_id: string;
+
+  // Whiteboard settings
+  @Column({ default: true })
+  showGrid: boolean;
+
+  @Column({ type: 'int', default: 3 })
+  defaultBrushSize: number;
+
+  @Column({ type: 'enum', enum: CursorType, default: CursorType.DEFAULT })
+  defaultCursorType: CursorType;
+
+  @Column({ type: 'float', default: 1.1 })
+  lineHeight: number;
+
+  // Document editor preferences
+  @Column({ type: 'int', default: 14 })
+  fontSize: number;
+
+  @Column({ default: true })
+  emailNotifications: boolean;
+
+  // Theme preferences
+  @Column({ type: 'enum', enum: ThemeMode, default: ThemeMode.LIGHT })
+  themeMode: ThemeMode;
+
+  @Column({ default: 'primary' })
+  accentColor: string;
+
+  @CreateDateColumn({ type: 'timestamp with time zone' })
+  created_at: Date;
+
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
+  updated_at: Date;
 }
