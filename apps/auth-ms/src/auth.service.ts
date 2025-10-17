@@ -71,7 +71,7 @@ export class AuthService {
       return {
         success: false,
         message:
-          'Invalid email or password. Please check your credentials and try again.',
+          'Invalid password. Please check your credentials and try again.',
         status: 401,
       };
     }
