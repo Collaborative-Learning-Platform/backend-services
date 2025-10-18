@@ -1,0 +1,45 @@
+config:
+  target: 'https://learniinstitute.live'
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Storage operations test"
+  defaults:
+    headers:
+      'Content-Type': 'application/json'
+      'Accept': 'application/json'
+  tls:
+    rejectUnauthorized: false
+  http:
+    timeout: 30
+
+scenarios:
+  - name: "Storage and File Operations"
+    weight: 100
+    flow:
+      # Login first
+      - post:
+          url: "/auth/login"
+          json:
+            email: "storage-user@test.com"
+            password: "storagepass123"
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 2
+      
+      # Test storage endpoints
+      - get:
+          url: "/storage/user-files/test-user-id"
+          expect:
+            - statusCode: [200, 404, 401]
+      - think: 1
+      
+      - post:
+          url: "/storage/upload"
+          json:
+            filename: "test-file.txt"
+            content_type: "text/plain"
+            file_size: 1024
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 3
