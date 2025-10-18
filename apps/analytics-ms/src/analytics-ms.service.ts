@@ -44,6 +44,9 @@ export class AnalyticsMsService {
 
     @Inject('AUTH_SERVICE')
     private readonly authClient: ClientProxy,
+
+    @Inject('WORKSPACE_CLIENT')
+    private readonly workspaceClient: ClientProxy,
   ) {}
 
   // =============================================
@@ -301,6 +304,134 @@ export class AnalyticsMsService {
   }
 
   // =============================================
+  // HELPER: FORMAT ACTIVITY ENTRIES WITH DESCRIPTIONS AND TIME
+  // =============================================
+
+  private formatActivitiesWithDescriptionAndTime(activities: any[]): any[] {
+    // Format the response data using the Activity Message Map and metadata
+    const formattedActivities = activities.map((activity) => {
+      let description = ActivityMessageMap[activity.activity_type];
+      const metadata = activity.metadata;
+
+      // Add specific details based on activity type and metadata
+      switch (activity.activity_type) {
+        case ActivityType.DOWNLOADED_RESOURCE:
+        case ActivityType.UPLOADED_RESOURCE:
+          if (metadata) {
+            const resourceMetadata = metadata as ResourceMetadata;
+            if (resourceMetadata.fileName) {
+              description = `${description} "${resourceMetadata.fileName}"`;
+            }
+          }
+          break;
+        case ActivityType.GENERATED_FLASHCARDS:
+          if (metadata) {
+            const flashcardMetadata =
+              activity.metadata as FlashcardCreateMetadata;
+            description = `${description} from resource ${flashcardMetadata.fileName}`;
+          }
+          break;
+        case ActivityType.DELETED_FLASHCARDS:
+          if (metadata) {
+            const flashcardMetadata =
+              activity.metadata as FlashcardDeleteMetadata;
+            description = `${description} "${flashcardMetadata.title}"`;
+          }
+          break;
+        case ActivityType.JOINED_WHITEBOARD:
+          if (metadata) {
+            const whiteboardMetadata = activity.metadata as WhiteboardMetadata;
+            description = `${description} in group ${whiteboardMetadata.groupName}`;
+          }
+          break;
+        case ActivityType.JOINED_DOCUMENT:
+          if (metadata) {
+            const documentMetadata = activity.metadata as DocumentMetadata;
+            description = `${description} "${documentMetadata.title}"`;
+          }
+          break;
+        case ActivityType.ADDED_TO_WORKSPACE:
+          if (metadata) {
+            const workspaceMetadata = activity.metadata as WorkspaceAddMetadata;
+            description = `${description} "${workspaceMetadata.name}"`;
+          }
+          break;
+        case ActivityType.ADDED_TO_GROUP:
+          if (metadata) {
+            const groupMetadata = activity.metadata as GroupMetadata;
+            description = `${description} "${groupMetadata.name}"`;
+          }
+          break;
+        case ActivityType.CREATED_WORKSPACE:
+          if (metadata) {
+            const workspaceMetadata =
+              activity.metadata as WorkspaceCreateMetadata;
+            description = `${description} "${workspaceMetadata.workspaceName}"`;
+          }
+          break;
+        case ActivityType.CREATED_GROUP:
+          if (metadata) {
+            const groupMetadata = activity.metadata as GroupMetadata;
+            description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
+          }
+          break;
+        case ActivityType.DELETED_GROUP:
+          if (metadata) {
+            const groupMetadata = activity.metadata as GroupMetadata;
+            description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
+          }
+          break;
+        case ActivityType.POSTED_MESSAGE:
+          if (metadata) {
+            const chatMetadata = activity.metadata as ChatMetadata;
+            description = `${description} in group "${chatMetadata.groupName}"`;
+          }
+          break;
+        case ActivityType.GENERATED_STUDY_PLAN:
+          description = `${description}`;
+          break;
+        case ActivityType.STARTED_QUIZ:
+          if (metadata) {
+            const quizMetadata = activity.metadata as QuizMetadata;
+            description = `${description} "${quizMetadata.quizTitle}"`;
+          }
+          break;
+        case ActivityType.SUBMITTED_QUIZ:
+          if (metadata) {
+            const quizMetadata = activity.metadata as QuizMetadata;
+            description = `${description} "${quizMetadata.quizTitle}"`;
+          }
+          break;
+        case ActivityType.CREATED_QUIZ:
+          if (metadata) {
+            const quizMetadata = activity.metadata as CreateQuizMetadata;
+            description = `${description} "${quizMetadata.quizTitle}" for group "${quizMetadata.groupName}" (due: ${quizMetadata.dueDate})`;
+          }
+          break;
+        default:
+          break;
+      }
+
+      const formattedActivity = {
+        ...activity,
+        description,
+      };
+
+      // Add time information
+      return {
+        id: formattedActivity.id,
+        category:
+          formattedActivity.activity_category || formattedActivity.category, // Try both possible field names
+        activity_type: formattedActivity.activity_type,
+        description: formattedActivity.description,
+        time: this.getTimeDifference(formattedActivity.created_at),
+      };
+    });
+
+    return formattedActivities;
+  }
+
+  // =============================================
   // FETCH RECENT USER ACTIVITY BY USER_ID
   // =============================================
   async fetchRecentUserActivities(user_id: string, limit = 5) {
@@ -332,132 +463,13 @@ export class AnalyticsMsService {
       //   });
       // });
 
-      // Format the response data using the Activity Message Map and metadata
-      const formattedActivities = activities.map((activity) => {
-        let description = ActivityMessageMap[activity.activity_type];
-        const metadata = activity.metadata;
-
-        // Add specific details based on activity type and metadata
-        switch (activity.activity_type) {
-          case ActivityType.DOWNLOADED_RESOURCE:
-          case ActivityType.UPLOADED_RESOURCE:
-            if (metadata) {
-              const resourceMetadata = metadata as ResourceMetadata;
-              if (resourceMetadata.fileName) {
-                description = `${description} "${resourceMetadata.fileName}"`;
-              }
-            }
-            break;
-          case ActivityType.GENERATED_FLASHCARDS:
-            if (metadata) {
-              const flashcardMetadata =
-                activity.metadata as FlashcardCreateMetadata;
-              description = `${description} from resource ${flashcardMetadata.fileName}`;
-            }
-            break;
-          case ActivityType.DELETED_FLASHCARDS:
-            if (metadata) {
-              const flashcardMetadata =
-                activity.metadata as FlashcardDeleteMetadata;
-              description = `${description} "${flashcardMetadata.title}"`;
-            }
-            break;
-          case ActivityType.JOINED_WHITEBOARD:
-            if (metadata) {
-              const whiteboardMetadata =
-                activity.metadata as WhiteboardMetadata;
-              description = `${description} in group ${whiteboardMetadata.groupName}`;
-            }
-            break;
-          case ActivityType.JOINED_DOCUMENT:
-            if (metadata) {
-              const documentMetadata = activity.metadata as DocumentMetadata;
-              description = `${description} "${documentMetadata.title}"`;
-            }
-            break;
-          case ActivityType.ADDED_TO_WORKSPACE:
-            if (metadata) {
-              const workspaceMetadata =
-                activity.metadata as WorkspaceAddMetadata;
-              description = `${description} "${workspaceMetadata.name}"`;
-            }
-            break;
-          case ActivityType.ADDED_TO_GROUP:
-            if (metadata) {
-              const groupMetadata = activity.metadata as GroupMetadata;
-              description = `${description} "${groupMetadata.name}"`;
-            }
-            break;
-          case ActivityType.CREATED_WORKSPACE:
-            if (metadata) {
-              const workspaceMetadata =
-                activity.metadata as WorkspaceCreateMetadata;
-              description = `${description} "${workspaceMetadata.workspaceName}"`;
-            }
-            break;
-          case ActivityType.CREATED_GROUP:
-            if (metadata) {
-              const groupMetadata = activity.metadata as GroupMetadata;
-              description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
-            }
-            break;
-          case ActivityType.DELETED_GROUP:
-            if (metadata) {
-              const groupMetadata = activity.metadata as GroupMetadata;
-              description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
-            }
-            break;
-          case ActivityType.POSTED_MESSAGE:
-            if (metadata) {
-              const chatMetadata = activity.metadata as ChatMetadata;
-              description = `${description} in group "${chatMetadata.groupName}"`;
-            }
-            break;
-          case ActivityType.GENERATED_STUDY_PLAN:
-            description = `${description}`;
-            break;
-          case ActivityType.STARTED_QUIZ:
-            if (metadata) {
-              const quizMetadata = activity.metadata as QuizMetadata;
-              description = `${description} "${quizMetadata.quizTitle}"`;
-            }
-            break;
-          case ActivityType.SUBMITTED_QUIZ:
-            if (metadata) {
-              const quizMetadata = activity.metadata as QuizMetadata;
-              description = `${description} "${quizMetadata.quizTitle}"`;
-            }
-            break;
-          case ActivityType.CREATED_QUIZ:
-            if (metadata) {
-              const quizMetadata = activity.metadata as CreateQuizMetadata;
-              description = `${description} "${quizMetadata.quizTitle}" for group "${quizMetadata.groupName}" (due: ${quizMetadata.dueDate})`;
-            }
-            break;
-          default:
-            break;
-        }
-
-        return {
-          ...activity,
-          description,
-        };
-      });
-
-      const activitiesWithTime = formattedActivities.map((activity) => {
-        // console.log('Backend activity:', activity); // Debug log
-        return {
-          id: activity.id,
-          category: activity.activity_category || activity.category, // Try both possible field names
-          activity_type: activity.activity_type,
-          description: activity.description,
-          time: this.getTimeDifference(activity.created_at),
-        };
-      });
+      // Format activities using the helper function
+      const formattedActivities =
+        this.formatActivitiesWithDescriptionAndTime(activities);
 
       return {
         success: true,
-        data: activitiesWithTime,
+        data: formattedActivities,
         message: `Fetched ${formattedActivities.length} recent activities for user ${user_id}`,
         status: 200,
       };
@@ -501,6 +513,83 @@ export class AnalyticsMsService {
       return {
         success: false,
         message: 'Failed to fetch current streak days',
+      };
+    }
+  }
+
+  // =============================================
+  // FETCH USER GROUP ACTIVITIES
+  // =============================================
+  async fetchUserGroupActivities(user_id: string, limit = 5) {
+    try {
+      // First, get all groups the user belongs to from workspace-ms
+      const groupsResponse = await lastValueFrom(
+        this.workspaceClient.send(
+          { cmd: 'workspace_get_groups_by_user' },
+          { userId: user_id },
+        ),
+      );
+
+      if (!groupsResponse || !groupsResponse.success || !groupsResponse.data) {
+        this.logger.error(
+          `Failed to get groups for user ${user_id}`,
+          groupsResponse,
+        );
+        return {
+          success: false,
+          message: 'Failed to get user groups',
+          status: 400,
+        };
+      }
+
+      // Extract group IDs
+      const groupIds = groupsResponse.data.map((group) => group.id);
+
+      if (groupIds.length === 0) {
+        // User doesn't belong to any groups
+        return {
+          success: true,
+          data: [],
+          message: 'User does not belong to any groups',
+          status: 200,
+        };
+      }
+
+      // Query activities where metadata->>'groupId' is in the list of group IDs
+      const activities = await this.userActivityRepo
+        .createQueryBuilder('activity')
+        .select([
+          'activity.id as id',
+          'activity.category as category',
+          'activity.activity_type as activity_type',
+          'activity.description as description',
+          'activity.metadata as metadata',
+          'activity.created_at as created_at',
+        ])
+        .where(`activity.metadata->>'groupId' IN (:...groupIds)`, { groupIds })
+        .andWhere('activity.activity_type != :login', {
+          login: ActivityType.LOGIN,
+        })
+        .orderBy('activity.created_at', 'DESC')
+        .limit(limit)
+        .getRawMany();
+
+      // Format activities using the helper function
+      const formattedActivities =
+        this.formatActivitiesWithDescriptionAndTime(activities);
+
+      return {
+        success: true,
+        data: formattedActivities,
+        message: `Fetched ${formattedActivities.length} recent activities from user's groups`,
+        status: 200,
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch user group activities', error.stack);
+      return {
+        success: false,
+        message: 'Failed to fetch user group activities',
+        status: 500,
       };
     }
   }

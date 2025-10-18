@@ -263,6 +263,39 @@ export class AiserviceController {
   }
 
   @UseGuards(AuthGuard)
+  @Get('flashcards/stats')
+  async getFlashcardStats(@Req() req: any, @Res() res: Response) {
+    const userId = req.user.userId;
+
+    console.log(
+      'Request received at gateway to get flashcard stats for user:',
+      userId,
+    );
+
+    const response = await lastValueFrom(
+      this.aiMsService.send({ cmd: 'fetch_flashcard_stats' }, { userId }),
+    );
+
+    console.log('Response from AI Service for get flashcard stats:', response);
+
+    if (response?.error) {
+      const ret = handleValidationError(response.error);
+      return res.status(400).json(ret);
+    }
+
+    if (!response.success) {
+      const ret = {
+        success: false,
+        message: response.message || 'Failed to fetch flashcard stats',
+        status: response.status || 400,
+      };
+      return res.status(ret.status).json(ret);
+    }
+
+    return res.json(response);
+  }
+
+  @UseGuards(AuthGuard)
   @Get('flashcards/:flashcardId')
   async getFlashcardById(
     @Req() req: any,

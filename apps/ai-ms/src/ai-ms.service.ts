@@ -4,7 +4,7 @@ import { GenerateStudyPlanDto } from './dto/generateStudyPlanDto';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, lastValueFrom } from 'rxjs';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { StudyPlan } from './entity/study_plan.entity';
 import { Flashcard, FlashcardContent } from './entity/flashcard.entity';
 import { UpdateTaskCompletionDto } from './dto/updateTaskCompletion.dto';
@@ -809,6 +809,51 @@ export class AiMsService {
         success: false,
         message: 'Failed to delete flashcard',
         error: error.message,
+      };
+    }
+  }
+
+  async fetchFlashcardStats(userId: string) {
+    // Total number of flashcard sets for the user
+    try {
+      const totalSets = await this.flashcardRepository.count({
+        where: { userId },
+      });
+
+      // Total number of cards across all sets for the user
+      const totalCardsResult = await this.flashcardRepository
+        .createQueryBuilder('flashcard')
+        .select('SUM(flashcard.cardCount)', 'total')
+        .where('flashcard.userId = :userId', { userId })
+        .getRawOne();
+      const totalCards = Number(totalCardsResult.total) || 0;
+
+      // Number of sets created this week
+      const startOfWeek = new Date();
+      startOfWeek.setHours(0, 0, 0, 0);
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Sunday
+
+      const thisWeek = await this.flashcardRepository.count({
+        where: {
+          userId,
+          createdAt: MoreThanOrEqual(startOfWeek),
+        },
+      });
+
+      return {
+        success: true,
+        data: {
+          totalSets,
+          totalCards,
+          thisWeek,
+        },
+        message: 'Flashcard stats fetched successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Couldnt fetch Flashcard Data',
+        status: 500,
       };
     }
   }
