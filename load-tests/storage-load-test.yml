@@ -1,0 +1,147 @@
+config:
+  target: 'https://learniinstitute.live'
+  phases:
+    # Storage operations are typically continuous but with bursts
+    - duration: 90
+      arrivalRate: 6
+      name: "Normal file operations"
+    - duration: 120
+      arrivalRate: 15
+      rampTo: 35
+      name: "Peak upload hours"
+    - duration: 180
+      arrivalRate: 35
+      name: "Sustained file activity"
+  defaults:
+    headers:
+      'Content-Type': 'application/json'
+  processor: "./storage-processor.js"
+
+scenarios:
+  - name: "File Upload and Management"
+    weight: 50
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "uploader{{ $randomInt(1, 80) }}@test.com"
+            password: "uploaderpass123"
+          capture:
+            - json: "$.access_token"
+              as: "accessToken"
+            - json: "$.user_id"
+              as: "userId"
+      - think: 1
+      
+      # Simulate file upload
+      - post:
+          url: "/storage/upload"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            filename: "test_file_{{ $randomString() }}.pdf"
+            file_size: "{{ $randomInt(1024, 5242880) }}"  # 1KB to 5MB
+            content_type: "application/pdf"
+            workspace_id: "ws-{{ $randomInt(1, 20) }}"
+            uploader_id: "{{ userId }}"
+          capture:
+            - json: "$.file_id"
+              as: "fileId"
+      - think: 3  # Upload processing time
+      
+      # Get file info
+      - get:
+          url: "/storage/file-info/{{ fileId }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+      - think: 1
+      
+      # List user files
+      - get:
+          url: "/storage/user-files/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          qs:
+            page: 1
+            limit: 20
+
+  - name: "File Download and Access"
+    weight: 30
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "downloader{{ $randomInt(1, 60) }}@test.com"
+            password: "downloaderpass123"
+          capture:
+            - json: "$.access_token"
+              as: "accessToken"
+            - json: "$.user_id"
+              as: "userId"
+      - think: 1
+      
+      # Search files
+      - get:
+          url: "/storage/search"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          qs:
+            query: "{{ $randomString() }}"
+            workspace_id: "ws-{{ $randomInt(1, 20) }}"
+      - think: 2
+      
+      # Download file
+      - get:
+          url: "/storage/download/file-{{ $randomInt(1, 500) }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+      - think: 5  # Download time
+      
+      # Get download history
+      - get:
+          url: "/storage/download-history/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+
+  - name: "File Sharing and Permissions"
+    weight: 20
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "sharer{{ $randomInt(1, 40) }}@test.com"
+            password: "sharerpass123"
+          capture:
+            - json: "$.access_token"
+              as: "accessToken"
+            - json: "$.user_id"
+              as: "userId"
+      - think: 1
+      
+      # Share file
+      - post:
+          url: "/storage/share"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            file_id: "file-{{ $randomInt(1, 200) }}"
+            shared_with: ["user{{ $randomInt(1, 100) }}@test.com"]
+            permissions: "read"
+            share_type: "workspace"
+      - think: 1
+      
+      # Get shared files
+      - get:
+          url: "/storage/shared-with-me/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+      - think: 1
+      
+      # Update file permissions
+      - put:
+          url: "/storage/permissions/file-{{ $randomInt(1, 200) }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            permissions: "write"
+            user_id: "user{{ $randomInt(1, 100) }}"

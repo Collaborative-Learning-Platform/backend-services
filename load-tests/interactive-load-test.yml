@@ -1,0 +1,139 @@
+config:
+  target: 'https://learniinstitute.live'
+  phases:
+    # Quiz and whiteboard systems experience periodic bursts
+    - duration: 60
+      arrivalRate: 3
+      name: "Low activity"
+    - duration: 180
+      arrivalRate: 12
+      rampTo: 25
+      name: "Class session activity"
+    - duration: 120
+      arrivalRate: 25
+      name: "Peak class hours"
+    - duration: 60
+      arrivalRate: 40
+      name: "Exam period burst"
+  defaults:
+    headers:
+      'Content-Type': 'application/json'
+  processor: "./interactive-processor.js"
+
+scenarios:
+  - name: "Quiz Operations"
+    weight: 60
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "student{{ $randomInt(1, 200) }}@test.com"
+            password: "studentpass123"
+          capture:
+            - json: "$.access_token"
+              as: "accessToken"
+            - json: "$.user_id"
+              as: "userId"
+      - think: 1
+      
+      # Get available quizzes
+      - get:
+          url: "/quiz/available/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+      - think: 2
+      
+      # Start quiz attempt
+      - post:
+          url: "/quiz/start-attempt"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            quiz_id: "quiz-{{ $randomInt(1, 50) }}"
+            student_id: "{{ userId }}"
+          capture:
+            - json: "$.attempt_id"
+              as: "attemptId"
+      - think: 15  # Time to read questions
+      
+      # Submit quiz answers
+      - post:
+          url: "/quiz/submit-answers"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            attempt_id: "{{ attemptId }}"
+            answers:
+              - question_id: "q1"
+                answer: "option_{{ $randomInt(1, 4) }}"
+              - question_id: "q2"
+                answer: "option_{{ $randomInt(1, 4) }}"
+              - question_id: "q3"
+                answer: "option_{{ $randomInt(1, 4) }}"
+      - think: 2
+      
+      # Get quiz results
+      - get:
+          url: "/quiz/results/{{ attemptId }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+
+  - name: "Whiteboard Collaboration"
+    weight: 40
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "participant{{ $randomInt(1, 100) }}@test.com"
+            password: "participantpass123"
+          capture:
+            - json: "$.access_token"
+              as: "accessToken"
+            - json: "$.user_id"
+              as: "userId"
+      - think: 1
+      
+      # Join whiteboard room
+      - get:
+          url: "/whiteboard/room/room-{{ $randomInt(1, 20) }}/info"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+      - think: 1
+      
+      # Get whiteboard state
+      - get:
+          url: "/whiteboard/room/room-{{ $randomInt(1, 20) }}/state"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+      - think: 5  # Time to view/interact with whiteboard
+      
+      # Update whiteboard content
+      - post:
+          url: "/whiteboard/update-content"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            room_id: "room-{{ $randomInt(1, 20) }}"
+            user_id: "{{ userId }}"
+            action: "draw"
+            data:
+              tool: "pen"
+              coordinates: [100, 150, 200, 250]
+              color: "#000000"
+      - think: 3
+      
+      # Get whiteboard stats
+      - get:
+          url: "/whiteboard/stats"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+      - think: 1
+      
+      # Upload content to whiteboard
+      - put:
+          url: "/whiteboard/uploads/{{ $randomInt(1, 100) }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            content_type: "image"
+            room_id: "room-{{ $randomInt(1, 20) }}"
