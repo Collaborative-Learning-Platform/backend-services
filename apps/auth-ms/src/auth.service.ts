@@ -28,6 +28,8 @@ export class AuthService {
     private readonly notificationClient: ClientProxy,
     @Inject('ANALYTICS_SERVICE')
     private readonly analyticsClient: ClientProxy,
+    @Inject('USER_SERVICE')
+    private readonly usersClient: ClientProxy,
 
     private jwtService: JwtService,
   ) {}
@@ -41,6 +43,15 @@ export class AuthService {
     const user = await this.userRepository.findOne({
       where: { email: credentials.email },
     });
+
+    if (user?.first_time_user) {
+      await lastValueFrom(
+        this.usersClient.send(
+          { cmd: 'create_default_preferences' },
+          { userID: user.id },
+        ),
+      );
+    }
 
     console.log(user);
 
@@ -60,7 +71,7 @@ export class AuthService {
       return {
         success: false,
         message:
-          'Invalid email or password. Please check your credentials and try again.',
+          'Invalid password. Please check your credentials and try again.',
         status: 401,
       };
     }
