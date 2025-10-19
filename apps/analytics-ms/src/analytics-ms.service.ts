@@ -607,7 +607,7 @@ export class AnalyticsMsService {
           login: ActivityType.LOGIN,
         })
         .orderBy('activity.created_at', 'DESC')
-        .limit(5) // Just get a few for debugging
+        .limit(limit) // Use the provided limit for debugging
         .getMany();
 
       this.logger.debug(
