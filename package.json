@@ -77,7 +77,18 @@
     "docker:logs": "docker-compose logs -f",
     "docker:ps": "docker-compose ps",
     "docker:restart": "docker-compose restart",
-    "docker:clean": "docker system prune -f && docker-compose down -v --rmi all"
+    "docker:clean": "docker system prune -f && docker-compose down -v --rmi all",
+    "load-test:auth": "cd load-tests && artillery run auth-load-test.yml",
+    "load-test:workspace": "cd load-tests && artillery run workspace-load-test.yml",
+    "load-test:ai": "cd load-tests && artillery run ai-load-test.yml",
+    "load-test:communication": "cd load-tests && artillery run communication-load-test.yml",
+    "load-test:interactive": "cd load-tests && artillery run interactive-load-test.yml",
+    "load-test:storage": "cd load-tests && artillery run storage-load-test.yml",
+    "load-test:comprehensive": "cd load-tests && artillery run comprehensive-load-test.yml",
+    "load-test:all": "npm run load-test:auth && npm run load-test:workspace && npm run load-test:ai && npm run load-test:communication && npm run load-test:interactive && npm run load-test:storage",
+    "load-test:quick": "cd load-tests && artillery quick --count 10 --num 50 https://learniinstitute.live",
+    "load-test:spike": "cd load-tests && artillery run comprehensive-load-test.yml --overrides \"{\\\"config\\\": {\\\"phases\\\": [{\\\"duration\\\": 30, \\\"arrivalRate\\\": 200}]}}\"",
+    "load-test:setup": "powershell -ExecutionPolicy Bypass -File load-tests/run-load-tests.ps1"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.899.0",

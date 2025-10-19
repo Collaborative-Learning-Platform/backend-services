@@ -1,0 +1,62 @@
+config:
+  target: 'https://learniinstitute.live'
+  phases:
+    # Light load
+    - duration: 60
+      arrivalRate: 3
+      name: "Light workspace operations"
+    # Medium load
+    - duration: 120
+      arrivalRate: 8
+      name: "Medium workspace load"
+  defaults:
+    headers:
+      'Content-Type': 'application/json'
+  tls:
+    rejectUnauthorized: false
+  http:
+    timeout: 30
+
+scenarios:
+  - name: "Workspace Authentication Test"
+    weight: 50
+    flow:
+      # Login first
+      - post:
+          url: "/auth/login"
+          json:
+            email: "admin@test.com"
+            password: "adminpass123"
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 2
+      
+      # Test workspace endpoints
+      - get:
+          url: "/workspace/getAllWorkspaces"
+          expect:
+            - statusCode: [200, 401, 404]
+      - think: 1
+
+  - name: "Workspace Operations Test"
+    weight: 50
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "teacher@test.com"
+            password: "teacherpass123"
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 1
+      
+      # Create workspace
+      - post:
+          url: "/workspace/create"
+          json:
+            name: "Test Workspace"
+            description: "Load test workspace"
+            owner_id: "test-user-id"
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 2

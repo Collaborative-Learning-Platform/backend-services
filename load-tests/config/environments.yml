@@ -1,0 +1,83 @@
+# Environment-specific configurations
+environments:
+  development:
+    target: 'http://localhost:3000'
+    phases:
+      - duration: 30
+        arrivalRate: 2
+  
+  staging:
+    target: 'https://staging.learniinstitute.live'
+    phases:
+      - duration: 60
+        arrivalRate: 10
+  
+  production:
+    target: 'https://learniinstitute.live'
+    phases:
+      - duration: 120
+        arrivalRate: 25
+
+# Custom test data for different environments
+testData:
+  development:
+    userCount: 10
+    fileSize: "small"
+    aiRequests: "limited"
+  
+  staging:
+    userCount: 100
+    fileSize: "medium"
+    aiRequests: "normal"
+  
+  production:
+    userCount: 1000
+    fileSize: "large"
+    aiRequests: "full"
+
+# Service-specific endpoints that might differ between environments
+endpoints:
+  auth:
+    - "/auth/login"
+    - "/auth/logout"
+    - "/auth/refresh"
+    - "/auth/forgot-password"
+    - "/auth/reset-password"
+  
+  workspace:
+    - "/workspace/create"
+    - "/workspace/getWorkspacesByUser/:id"
+    - "/workspace/getAllWorkspaces"
+    - "/workspace/groups/createGroup"
+  
+  ai:
+    - "/ai/chat"
+    - "/ai/generate-quiz"
+    - "/ai/generate-lesson"
+    - "/ai/analytics/usage"
+  
+  storage:
+    - "/storage/upload"
+    - "/storage/download/:id"
+    - "/storage/user-files/:id"
+    - "/storage/share"
+
+# Expected performance thresholds by environment
+performanceThresholds:
+  development:
+    responseTime:
+      p95: 1000  # ms
+      p99: 2000  # ms
+    errorRate: 5   # %
+  
+  staging:
+    responseTime:
+      p95: 800   # ms
+      p99: 1500  # ms
+    errorRate: 2   # %
+  
+  production:
+    responseTime:
+      p95: 500   # ms
+      p99: 1000  # ms
+    errorRate: 1   # %
