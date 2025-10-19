@@ -724,7 +724,7 @@ export class AnalyticsMsService {
           return {
             success: false,
             message:
-              'Error fetching user names for user group activities(tutor)',
+              'Failed to fetch user information for group activities',
             status: 500,
           };
         }
