@@ -34,10 +34,8 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-
-// ===================================================================================================================
-//login and token related functions
-
+  // ===================================================================================================================
+  //login and token related functions
 
   async login(credentials: LoginDto) {
     const user = await this.userRepository.findOne({
@@ -131,12 +129,8 @@ export class AuthService {
     };
   }
 
-
-
-// ===================================================================================================================
-//user retrieval related functions
-
-
+  // ===================================================================================================================
+  //user retrieval related functions
 
   async getUser(userId: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -210,10 +204,25 @@ export class AuthService {
     }
   }
 
+  //Get the count of the total number of users
+  async getUserCount() {
+    try {
+      const count = await this.userRepository.count();
+      return {
+        success: true,
+        data: count,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: 'Failed to get user count',
+        error: err.message,
+      };
+    }
+  }
 
-
-// ===================================================================================================================
-//profile picture related functions
+  // ===================================================================================================================
+  //profile picture related functions
 
   async storeProfilePicUrl(userId: string, profilePicUrl: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -235,7 +244,7 @@ export class AuthService {
       message: 'Profile picture updated successfully',
     };
   }
-  
+
   async getProfilePictureUrl(userId: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
@@ -253,11 +262,8 @@ export class AuthService {
     };
   }
 
-
-// ===================================================================================================================
-//password reset related functions
-
-
+  // ===================================================================================================================
+  //password reset related functions
 
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email: email } });
@@ -270,7 +276,9 @@ export class AuthService {
     }
 
     const token = uuidv4();
-    const existingToken = await this.passwordResetTokenRepository.findOne({ where: { userId: user.id } });
+    const existingToken = await this.passwordResetTokenRepository.findOne({
+      where: { userId: user.id },
+    });
     if (existingToken) {
       existingToken.token = token;
       existingToken.expiresAt = new Date(Date.now() + 10 * 60000); //10 min
@@ -283,7 +291,6 @@ export class AuthService {
       });
       await this.passwordResetTokenRepository.save(passwordResetToken);
     }
-
 
     // Send password reset email
     const { subject, html } = resetPasswordTemplate(
@@ -311,66 +318,70 @@ export class AuthService {
     };
   }
 
-
   async resetPassword(token: string, newPassword: string) {
-
-    try{
-       // Validate inputs
-       if (!token) {
-         return {
-           success: false,
-           message: 'Token is required',
-           status: 400,
-         };
-       }
-
-       if (!newPassword || typeof newPassword !== 'string' || newPassword.trim() === '') {
-         return {
-           success: false,
-           message: 'New password is required',
-           status: 400,
-         };
-       }
-
-       const resetToken = await this.passwordResetTokenRepository.findOne({ where: { token: token, expiresAt: MoreThan(new Date()) } });
-       console.log(resetToken) 
-       if (!resetToken) {
-          return {
-            success: false,
-            message: 'Invalid or expired token',
-            status: 400,
-          };
-        }
-        const user = await this.userRepository.findOne({ where: { id: resetToken.userId } });
-          if (!user) {
-            return {
-              success: false,
-              message: 'User not found',
-              status: 400,
-            };
-          }
-          user.hashed_password = await bcrypt.hash(newPassword, 10);
-          await this.userRepository.save(user);
-          await this.passwordResetTokenRepository.delete({ userId: user.id });
-
-          return {
-            success: true,
-            message: 'Password reset successfully',
-          };
-
-     }catch(err){
-        console.log(err)
+    try {
+      // Validate inputs
+      if (!token) {
         return {
           success: false,
-          message: 'Failed to reset password',
-          error: err.message,
+          message: 'Token is required',
+          status: 400,
         };
-     }    
+      }
+
+      if (
+        !newPassword ||
+        typeof newPassword !== 'string' ||
+        newPassword.trim() === ''
+      ) {
+        return {
+          success: false,
+          message: 'New password is required',
+          status: 400,
+        };
+      }
+
+      const resetToken = await this.passwordResetTokenRepository.findOne({
+        where: { token: token, expiresAt: MoreThan(new Date()) },
+      });
+      console.log(resetToken);
+      if (!resetToken) {
+        return {
+          success: false,
+          message: 'Invalid or expired token',
+          status: 400,
+        };
+      }
+      const user = await this.userRepository.findOne({
+        where: { id: resetToken.userId },
+      });
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+          status: 400,
+        };
+      }
+      user.hashed_password = await bcrypt.hash(newPassword, 10);
+      await this.userRepository.save(user);
+      await this.passwordResetTokenRepository.delete({ userId: user.id });
+
+      return {
+        success: true,
+        message: 'Password reset successfully',
+      };
+    } catch (err) {
+      console.log(err);
+      return {
+        success: false,
+        message: 'Failed to reset password',
+        error: err.message,
+      };
+    }
   }
 
-
-// ===================================================================================================================
-//User Bulk addition function
+  // ===================================================================================================================
+  //User Bulk addition function
 
   async processFileAndCreateUsers(fileData: {
     originalname: string;
@@ -452,11 +463,8 @@ export class AuthService {
     };
   }
 
-
-
-//Supportive functions  
-// ===================================================================================================================
-
+  //Supportive functions
+  // ===================================================================================================================
 
   //supportive functions for token generation and storage
   async generateToken(userId: string) {
@@ -503,7 +511,7 @@ export class AuthService {
     return this.generateToken(refreshToken.userId);
   }
 
-// ===================================================================================================================
+  // ===================================================================================================================
 
   //supportive functions for bulk user addition
 

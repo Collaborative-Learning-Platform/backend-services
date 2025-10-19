@@ -70,6 +70,6 @@ export class AnalyticsMsController {
     @Payload() payload: { user_id: string; limit?: number },
   ): Promise<ServiceResponse<any>> {
     const { user_id, limit } = payload;
-    return this.analyticsService.fetchUserGroupActivities(user_id, limit || 5);
+    return this.analyticsService.fetchUserGroupActivities(user_id, limit || 10);
   }
 }
