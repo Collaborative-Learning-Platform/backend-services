@@ -790,7 +790,7 @@ export class AnalyticsMsService {
     }
   }
 
-  //Helper funciton to get elapsed time from activity
+  //Helper function to get elapsed time from activity
   private getTimeDifference(createdAt: Date | string): string {
     // Get current time in local timezone
     const now = new Date();
