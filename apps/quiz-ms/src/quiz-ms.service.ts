@@ -40,21 +40,20 @@ export class QuizMsService {
         { groupId: createQuizDTO.groupId },
       ),
     );
-    if (!group) {
+    if (!group || !group.success) {
       return {
         success: false,
         statusCode: 404,
         message: 'Group not found',
       };
     }
-
     const user = await lastValueFrom(
       this.authService.send(
-        { cmd: 'get_user_by_id' },
-        createQuizDTO.createdById,
+        { cmd: 'auth_get_user' },
+        { userId: createQuizDTO.createdById },
       ),
     );
-    if (!user) {
+    if (!user || !user.success) {
       return {
         success: false,
         statusCode: 404,
@@ -68,8 +67,8 @@ export class QuizMsService {
       deadline: createQuizDTO.deadline,
       timeLimit: createQuizDTO.timeLimit,
       isPublished: createQuizDTO.isPublished ?? false,
-      groupId: group.groupId,
-      createdById: user.id,
+      groupId: group.data.groupId,
+      createdById: user.user.id,
     });
 
     try {
@@ -78,7 +77,6 @@ export class QuizMsService {
       throw new BadRequestException('Error creating quiz: ' + error.message);
     }
   }
-
 
   async getAllQuizzes(): Promise<Quiz[]> {
     try {
@@ -149,21 +147,20 @@ export class QuizMsService {
         data: quiz,
       };
     } catch (error) {
-      return{
+      return {
         success: false,
         statusCode: 400,
         message: 'Error fetching quiz: ' + error.message,
-      }
+      };
     }
   }
-
   async getQuizByGroupId(groupId: string) {
     try {
       const group = await lastValueFrom(
-        this.workspaceService.send({ cmd: 'get_group_details' }, groupId),
+        this.workspaceService.send({ cmd: 'get_group_details' }, { groupId }),
       );
       console.log(group);
-      if (!group) {
+      if (!group || !group.success) {
         return {
           success: false,
           statusCode: 404,
@@ -230,7 +227,7 @@ export class QuizMsService {
   }
 
   async getQuizzesByUserGroups(userGroupIds: string[]) {
-    try{
+    try {
       if (!userGroupIds || userGroupIds.length === 0) {
         return {
           success: true,
@@ -252,7 +249,6 @@ export class QuizMsService {
         statusCode: 200,
         data: quizzes,
       };
-      
     } catch (error) {
       throw new BadRequestException('Error fetching quizzes: ' + error.message);
     }
@@ -456,8 +452,7 @@ export class QuizMsService {
           data: attempts,
         };
       }
-    
-    }catch (error) {
+    } catch (error) {
       return {
         success: false,
         statusCode: 400,
@@ -467,14 +462,14 @@ export class QuizMsService {
   }
 
   async deleteGroupQuizzes(groupId: string) {
-    try{
-      const quizzes = await this.quizRepo.find({where: {groupId}});
-      if(quizzes.length === 0){
+    try {
+      const quizzes = await this.quizRepo.find({ where: { groupId } });
+      if (quizzes.length === 0) {
         return {
           success: true,
           statusCode: 200,
           message: 'No quizzes found for the group',
-        }
+        };
       }
       await this.quizRepo.remove(quizzes);
       return {
@@ -490,5 +485,4 @@ export class QuizMsService {
       };
     }
   }
-
 }
