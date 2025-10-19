@@ -1,0 +1,44 @@
+config:
+  target: 'https://learniinstitute.live'
+  phases:
+    # Warm up phase
+    - duration: 30
+      arrivalRate: 2
+      name: "Warm up"
+    # Test phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Auth testing"
+  defaults:
+    headers:
+      'Content-Type': 'application/json'
+      'Accept': 'application/json'
+  tls:
+    rejectUnauthorized: false
+  http:
+    timeout: 30
+
+scenarios:
+  - name: "Authentication Flow Test"
+    weight: 60
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "test@example.com"
+            password: "testpassword123"
+          expect:
+            - statusCode: [200, 400, 401, 404]  # Accept various response codes
+      - think: 2
+
+  - name: "Failed Login Attempts"
+    weight: 40
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "invalid@test.com"
+            password: "wrongpassword"
+          expect:
+            - statusCode: [400, 401, 404]
+      - think: 1

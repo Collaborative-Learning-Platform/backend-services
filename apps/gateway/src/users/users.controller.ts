@@ -12,6 +12,11 @@ export class UsersController {
     return this.usersClient.send({ cmd: 'get_profile' }, dto);
   }
 
+  @Get('preferences/:id')
+  getPreferences(@Param('id') userID: string) {
+    return this.usersClient.send({ cmd: 'get_preferences' }, { userID });
+  }
+
   @Put('update-user/:id')
   async updateUserName(
     @Param('id') id: string,
@@ -25,6 +30,18 @@ export class UsersController {
           name: body.name,
         },
       },
+    );
+  }
+
+  // === Update preferences ===
+  @Put('preferences/:id')
+  updatePreferences(
+    @Param('id') userID: string,
+    @Body() updates: Record<string, any>,
+  ) {
+    return this.usersClient.send(
+      { cmd: 'update_preferences' },
+      { userID, updates },
     );
   }
 }

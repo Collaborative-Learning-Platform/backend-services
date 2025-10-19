@@ -1,0 +1,24 @@
+{
+  "name": "backend-load-tests",
+  "version": "1.0.0",
+  "description": "Load testing suite for learniinstitute.live backend services",
+  "scripts": {
+    "test:auth": "artillery run auth-load-test.yml",
+    "test:workspace": "artillery run workspace-load-test.yml",
+    "test:ai": "artillery run ai-load-test.yml",
+    "test:communication": "artillery run communication-load-test.yml",
+    "test:interactive": "artillery run interactive-load-test.yml",
+    "test:storage": "artillery run storage-load-test.yml",
+    "test:comprehensive": "artillery run comprehensive-load-test.yml",
+    "test:all": "npm run test:auth && npm run test:workspace && npm run test:ai && npm run test:communication && npm run test:interactive && npm run test:storage",
+    "test:quick": "artillery quick --count 10 --num 50 https://learniinstitute.live/auth/login",
+    "test:spike": "artillery run comprehensive-load-test.yml --overrides '{\"config\": {\"phases\": [{\"duration\": 30, \"arrivalRate\": 200}]}}'",
+    "report": "artillery report"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^8.4.1"
+  },
+  "devDependencies": {
+    "artillery": "^2.0.21"
+  }
+}

@@ -1,0 +1,145 @@
+config:
+  target: 'https://learniinstitute.live'
+  phases:
+    # Communication systems need to handle burst traffic
+    - duration: 90
+      arrivalRate: 8
+      name: "Normal communication load"
+    - duration: 120
+      arrivalRate: 15
+      rampTo: 40
+      name: "Peak communication hours"
+    - duration: 60
+      arrivalRate: 60
+      name: "Burst communication load"
+  defaults:
+    headers:
+      'Content-Type': 'application/json'
+  processor: "./communication-processor.js"
+
+scenarios:
+  - name: "Chat Operations"
+    weight: 50
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "student{{ $randomInt(1, 100) }}@test.com"
+            password: "studentpass123"
+          capture:
+            - json: "$.access_token"
+              as: "accessToken"
+            - json: "$.user_id"
+              as: "userId"
+      - think: 1
+      
+      # Send chat message
+      - post:
+          url: "/chat/send-message"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            message: "Hello, this is a test message {{ $randomString() }}"
+            chat_room_id: "general-{{ $randomInt(1, 10) }}"
+            sender_id: "{{ userId }}"
+      - think: 2
+      
+      # Get chat history
+      - get:
+          url: "/chat/history/general-{{ $randomInt(1, 10) }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          qs:
+            limit: 20
+      - think: 1
+      
+      # Get active chats
+      - get:
+          url: "/chat/active-chats/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+
+  - name: "Notification Operations"
+    weight: 30
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "teacher{{ $randomInt(1, 20) }}@test.com"
+            password: "teacherpass123"
+          capture:
+            - json: "$.access_token"
+              as: "accessToken"
+            - json: "$.user_id"
+              as: "userId"
+      - think: 1
+      
+      # Send notification
+      - post:
+          url: "/notifications/send"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            title: "Test Notification {{ $randomString() }}"
+            message: "This is a test notification for load testing"
+            recipients: ["student1@test.com", "student2@test.com"]
+            type: "announcement"
+      - think: 1
+      
+      # Get user notifications
+      - get:
+          url: "/notifications/user/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          qs:
+            status: "unread"
+            limit: 10
+      - think: 1
+      
+      # Mark notification as read
+      - put:
+          url: "/notifications/mark-read/{{ $randomInt(1, 100) }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+
+  - name: "Real-time Document Collaboration"
+    weight: 20
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "collaborator{{ $randomInt(1, 50) }}@test.com"
+            password: "collabpass123"
+          capture:
+            - json: "$.access_token"
+              as: "accessToken"
+            - json: "$.user_id"
+              as: "userId"
+      - think: 1
+      
+      # Join document session
+      - post:
+          url: "/documents/join-session"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            document_id: "doc-{{ $randomInt(1, 20) }}"
+            user_id: "{{ userId }}"
+      - think: 2
+      
+      # Update document content
+      - post:
+          url: "/documents/update-content"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            document_id: "doc-{{ $randomInt(1, 20) }}"
+            content: "Updated content at {{ $timestamp() }}"
+            user_id: "{{ userId }}"
+      - think: 3
+      
+      # Get document history
+      - get:
+          url: "/documents/history/doc-{{ $randomInt(1, 20) }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"

@@ -1,0 +1,65 @@
+config:
+  target: 'https://learniinstitute.live'
+  phases:
+    # Basic load for AI operations (typically more resource intensive)
+    - duration: 60
+      arrivalRate: 2
+      name: "Light AI load"
+    # Medium AI load
+    - duration: 120
+      arrivalRate: 5
+      name: "Medium AI load"
+  defaults:
+    headers:
+      'Content-Type': 'application/json'
+  tls:
+    rejectUnauthorized: false
+  http:
+    timeout: 30
+
+scenarios:
+  - name: "AI Authentication Test"
+    weight: 50
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "student@test.com"
+            password: "studentpass123"
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 2
+      
+      # AI Chat request
+      - post:
+          url: "/ai/chat"
+          json:
+            message: "Explain the concept of photosynthesis"
+            context: "educational"
+            workspace_id: "test-workspace"
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 5  # AI responses typically take longer
+
+  - name: "AI Content Generation Test"
+    weight: 50
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "teacher@test.com"
+            password: "teacherpass123"
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 1
+      
+      # Generate quiz questions
+      - post:
+          url: "/ai/generate-quiz"
+          json:
+            topic: "Mathematics"
+            difficulty: "medium"
+            question_count: 5
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 8  # Content generation takes time

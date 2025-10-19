@@ -1,0 +1,91 @@
+# Comprehensive load testing configuration for all services
+config:
+  target: 'https://learniinstitute.live'
+  phases:
+    # Gradual ramp up to simulate real usage patterns
+    - duration: 30
+      arrivalRate: 3
+      name: "Startup phase"
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 10
+      name: "Morning peak"
+    - duration: 120
+      arrivalRate: 10
+      name: "School hours"
+    - duration: 60
+      arrivalRate: 15
+      name: "Stress test"
+  defaults:
+    headers:
+      'Content-Type': 'application/json'
+      'Accept': 'application/json'
+      'User-Agent': 'Artillery-LoadTest/1.0'
+  tls:
+    rejectUnauthorized: false
+  http:
+    timeout: 30
+  
+variables:
+  testUsers:
+    - email: "admin@test.com"
+      password: "adminpass123"
+      role: "admin"
+    - email: "teacher1@test.com"
+      password: "teacherpass123"
+      role: "teacher"
+    - email: "student1@test.com"
+      password: "studentpass123"
+      role: "student"
+
+scenarios:
+  - name: "Authentication Test"
+    weight: 40
+    flow:
+      # 1. Login
+      - post:
+          url: "/auth/login"
+          json:
+            email: "test@example.com"
+            password: "password123"
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 2
+
+  - name: "Multiple Auth Attempts"
+    weight: 30
+    flow:
+      # Test multiple login attempts
+      - post:
+          url: "/auth/login"
+          json:
+            email: "user{{ $randomInt(1, 100) }}@test.com"
+            password: "password123"
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 1
+      
+      - post:
+          url: "/auth/login"
+          json:
+            email: "admin@test.com"
+            password: "adminpass"
+          expect:
+            - statusCode: [200, 201, 400, 401, 404]
+      - think: 2
+
+  - name: "API Endpoint Test"
+    weight: 30
+    flow:
+      # Test various endpoints
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: [200, 404]
+      - think: 1
+      
+      - get:
+          url: "/api/status"
+          expect:
+            - statusCode: [200, 404]
+      - think: 2

@@ -72,6 +72,8 @@ export class AuthController {
       });
   }
 
+
+
   //first time login to change password
   @Post('first-time-login')
   async firstTimeLogin(@Body() data: { user_id: string; new_password: string }, @Res() res: Response) {
@@ -98,6 +100,7 @@ export class AuthController {
   }
 
 
+  //Forgot password endpoint to initiate password reset process
   @Post('forgot-password')
   async forgotPassword(@Body() data: { email: string }, @Res() res: Response) {
     
@@ -124,8 +127,36 @@ export class AuthController {
     });
   }
 
+  @Post('reset-password')
+  async resetPassword(@Body() data: { token: string; newPassword: string }, @Res() res: Response) {
+    const response = await lastValueFrom(
+      this.authClient.send({ cmd: 'auth_reset_password' }, data),
+    );
+
+    if (response?.error) {
+      const ret = handleValidationError(response.error);
+      return res.json(ret);
+    }
+
+    if (!response?.success) {
+      return res.json({
+        success: false,
+        message: response.message || 'Password reset failed',
+        status: response.status || 400,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Password reset successfully',
+    });
+  }
+
+  
 
 
+
+  //Refresh token endpoint to issue new access and refresh tokens
   @Get('refresh-token')
   async refreshToken(@Req() req: Request, @Res() res: Response) {
    
@@ -169,6 +200,8 @@ export class AuthController {
 
 
 
+
+  //Supporting function to set HttpOnly cookies  
   private async setAuthCookies(res: Response, access_token: string, refresh_token: string) {
   const cookieOptions = {
     httpOnly: true,
@@ -183,6 +216,7 @@ export class AuthController {
 
 
 
+  //Bulk user registration via CSV/Excel file upload
   @Post('bulk-upload')
   @UseInterceptors(FileInterceptor('file', { storage: multer.memoryStorage() }))
   async bulkUpload(@UploadedFile() file: Express.Multer.File, @Res() res: Response) {
@@ -213,6 +247,7 @@ export class AuthController {
 
   
 
+  //get user details by id
   @Get('get-user/:userId')
   async getUser(@Param('userId') userId: string, @Res() res: Response) {
     
@@ -240,6 +275,7 @@ export class AuthController {
   }
 
 
+  //get all users in the system
   @Get('users')
   async getUsers(@Res() res: Response) {
     const response = await lastValueFrom(

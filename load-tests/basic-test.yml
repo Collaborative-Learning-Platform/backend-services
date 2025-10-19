@@ -1,0 +1,30 @@
+config:
+  target: 'https://learniinstitute.live'
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Basic connectivity test"
+  defaults:
+    headers:
+      'Content-Type': 'application/json'
+      'Accept': 'application/json'
+      'User-Agent': 'Artillery-LoadTest/1.0'
+  tls:
+    rejectUnauthorized: false  # Handle SSL certificate issues
+  http:
+    timeout: 30  # 30 second timeout
+
+scenarios:
+  - name: "Basic Server Health Check"
+    weight: 100
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: [200, 404, 302]  # Accept various response codes
+      - think: 2
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: [200, 404]
+      - think: 1

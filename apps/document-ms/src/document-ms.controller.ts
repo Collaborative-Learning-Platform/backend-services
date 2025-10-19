@@ -7,6 +7,7 @@ import {
 } from './dto/document-response.dto';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ServiceResponse } from './interfaces/serviceresponse.interface';
+import { MyDocumentsResponseDto } from './dto/mydocuments-response.dto';
 
 @Controller('documents')
 export class DocumentMsController {
@@ -47,7 +48,7 @@ export class DocumentMsController {
   @MessagePattern({ cmd: 'list_documents_by_group' })
   async listByGroup(
     @Payload() groupId: string,
-  ): Promise<ServiceResponse<DocumentResponseDto[]>> {
+  ): Promise<ServiceResponse<MyDocumentsResponseDto[]>> {
     return this.documentMsService.listByGroup(groupId);
   }
 

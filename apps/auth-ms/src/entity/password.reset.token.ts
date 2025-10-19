@@ -1,14 +1,14 @@
 import { Entity, Column, PrimaryColumn } from "typeorm";
 
 @Entity()
-export class RefreshToken {
+export class PasswordResetToken {
 
   @PrimaryColumn({ type: 'uuid', nullable: false })
   userId: string;
 
   @Column({ nullable: false })
-  refresh_token: string;
-    
+  token: string;
+
   @Column({ type: 'timestamp', nullable: false })
   expiresAt: Date;
 }
