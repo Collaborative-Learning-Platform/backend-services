@@ -44,6 +44,9 @@ export class AnalyticsMsService {
 
     @Inject('AUTH_SERVICE')
     private readonly authClient: ClientProxy,
+
+    @Inject('WORKSPACE_SERVICE')
+    private readonly workspaceClient: ClientProxy,
   ) {}
 
   // =============================================
@@ -301,6 +304,154 @@ export class AnalyticsMsService {
   }
 
   // =============================================
+  // HELPER: FORMAT ACTIVITY ENTRIES WITH DESCRIPTIONS AND TIME
+  // =============================================
+
+  private formatActivitiesWithDescriptionAndTime(activities: any[]): any[] {
+    // Format the response data using the Activity Message Map and metadata
+    const formattedActivities = activities.map((activity) => {
+      let description = ActivityMessageMap[activity.activity_type];
+      const metadata = activity.metadata;
+
+      // Add specific details based on activity type and metadata
+      switch (activity.activity_type) {
+        case ActivityType.DOWNLOADED_RESOURCE:
+        case ActivityType.UPLOADED_RESOURCE:
+          if (metadata) {
+            const resourceMetadata = metadata as ResourceMetadata;
+            if (resourceMetadata.fileName) {
+              description = `${description} "${resourceMetadata.fileName}"`;
+            }
+          }
+          break;
+        case ActivityType.GENERATED_FLASHCARDS:
+          if (metadata) {
+            const flashcardMetadata =
+              activity.metadata as FlashcardCreateMetadata;
+            description = `${description} from resource ${flashcardMetadata.fileName}`;
+          }
+          break;
+        case ActivityType.DELETED_FLASHCARDS:
+          if (metadata) {
+            const flashcardMetadata =
+              activity.metadata as FlashcardDeleteMetadata;
+            description = `${description} "${flashcardMetadata.title}"`;
+          }
+          break;
+        case ActivityType.JOINED_WHITEBOARD:
+          if (metadata) {
+            const whiteboardMetadata = activity.metadata as WhiteboardMetadata;
+            description = `${description} in group ${whiteboardMetadata.groupName}`;
+          }
+          break;
+        case ActivityType.JOINED_DOCUMENT:
+          if (metadata) {
+            const documentMetadata = activity.metadata as DocumentMetadata;
+            description = `${description} "${documentMetadata.title}"`;
+          }
+          break;
+        case ActivityType.ADDED_TO_WORKSPACE:
+          if (metadata) {
+            const workspaceMetadata = activity.metadata as WorkspaceAddMetadata;
+            description = `${description} "${workspaceMetadata.name}"`;
+          }
+          break;
+        case ActivityType.ADDED_TO_GROUP:
+          if (metadata) {
+            const groupMetadata = activity.metadata as GroupMetadata;
+            description = `${description} "${groupMetadata.name}"`;
+          }
+          break;
+        case ActivityType.CREATED_WORKSPACE:
+          if (metadata) {
+            const workspaceMetadata =
+              activity.metadata as WorkspaceCreateMetadata;
+            description = `${description} "${workspaceMetadata.workspaceName}"`;
+          }
+          break;
+        case ActivityType.CREATED_GROUP:
+          if (metadata) {
+            const groupMetadata = activity.metadata as GroupMetadata;
+            description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
+          }
+          break;
+        case ActivityType.DELETED_GROUP:
+          if (metadata) {
+            const groupMetadata = activity.metadata as GroupMetadata;
+            description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
+          }
+          break;
+        case ActivityType.POSTED_MESSAGE:
+          if (metadata) {
+            const chatMetadata = activity.metadata as ChatMetadata;
+            description = `${description} in group "${chatMetadata.groupName}"`;
+          }
+          break;
+        case ActivityType.GENERATED_STUDY_PLAN:
+          description = `${description}`;
+          break;
+        case ActivityType.STARTED_QUIZ:
+          if (metadata) {
+            const quizMetadata = activity.metadata as QuizMetadata;
+            description = `${description} "${quizMetadata.quizTitle}"`;
+          }
+          break;
+        case ActivityType.SUBMITTED_QUIZ:
+          if (metadata) {
+            const quizMetadata = activity.metadata as QuizMetadata;
+            description = `${description} "${quizMetadata.quizTitle}"`;
+          }
+          break;
+        case ActivityType.CREATED_QUIZ:
+          if (metadata) {
+            const quizMetadata = activity.metadata as CreateQuizMetadata;
+            description = `${description} "${quizMetadata.quizTitle}" for group "${quizMetadata.groupName}" (due: ${quizMetadata.dueDate})`;
+          }
+          break;
+        default:
+          break;
+      }
+
+      const formattedActivity = {
+        ...activity,
+        description,
+      };
+
+      // Build the formatted object
+      const formatted: any = {
+        id: formattedActivity.id,
+        category: formattedActivity.category,
+        activity_type: formattedActivity.activity_type,
+        description: formattedActivity.description,
+        metadata: formattedActivity.metadata, // Include metadata field
+        time: this.getTimeDifference(activity.created_at),
+      };
+
+      // Include user_id if present
+      if ('user_id' in activity) {
+        formatted.user_id = activity.user_id;
+      }
+
+      return formatted;
+    });
+
+    return formattedActivities;
+  }
+
+  //Private function to build UserIds
+  private buildUserIdNameMap(userRes: any): Record<string, string> {
+    const userIdNameMap: Record<string, string> = {};
+    if (userRes && userRes.success && Array.isArray(userRes.users)) {
+      userRes.users.forEach((user: any) => {
+        if (user.userId && user.name) {
+          userIdNameMap[user.userId] = user.name;
+        }
+      });
+    }
+    return userIdNameMap;
+  }
+
+  // =============================================
   // FETCH RECENT USER ACTIVITY BY USER_ID
   // =============================================
   async fetchRecentUserActivities(user_id: string, limit = 5) {
@@ -332,132 +483,13 @@ export class AnalyticsMsService {
       //   });
       // });
 
-      // Format the response data using the Activity Message Map and metadata
-      const formattedActivities = activities.map((activity) => {
-        let description = ActivityMessageMap[activity.activity_type];
-        const metadata = activity.metadata;
-
-        // Add specific details based on activity type and metadata
-        switch (activity.activity_type) {
-          case ActivityType.DOWNLOADED_RESOURCE:
-          case ActivityType.UPLOADED_RESOURCE:
-            if (metadata) {
-              const resourceMetadata = metadata as ResourceMetadata;
-              if (resourceMetadata.fileName) {
-                description = `${description} "${resourceMetadata.fileName}"`;
-              }
-            }
-            break;
-          case ActivityType.GENERATED_FLASHCARDS:
-            if (metadata) {
-              const flashcardMetadata =
-                activity.metadata as FlashcardCreateMetadata;
-              description = `${description} from resource ${flashcardMetadata.fileName}`;
-            }
-            break;
-          case ActivityType.DELETED_FLASHCARDS:
-            if (metadata) {
-              const flashcardMetadata =
-                activity.metadata as FlashcardDeleteMetadata;
-              description = `${description} "${flashcardMetadata.title}"`;
-            }
-            break;
-          case ActivityType.JOINED_WHITEBOARD:
-            if (metadata) {
-              const whiteboardMetadata =
-                activity.metadata as WhiteboardMetadata;
-              description = `${description} in group ${whiteboardMetadata.groupName}`;
-            }
-            break;
-          case ActivityType.JOINED_DOCUMENT:
-            if (metadata) {
-              const documentMetadata = activity.metadata as DocumentMetadata;
-              description = `${description} "${documentMetadata.title}"`;
-            }
-            break;
-          case ActivityType.ADDED_TO_WORKSPACE:
-            if (metadata) {
-              const workspaceMetadata =
-                activity.metadata as WorkspaceAddMetadata;
-              description = `${description} "${workspaceMetadata.name}"`;
-            }
-            break;
-          case ActivityType.ADDED_TO_GROUP:
-            if (metadata) {
-              const groupMetadata = activity.metadata as GroupMetadata;
-              description = `${description} "${groupMetadata.name}"`;
-            }
-            break;
-          case ActivityType.CREATED_WORKSPACE:
-            if (metadata) {
-              const workspaceMetadata =
-                activity.metadata as WorkspaceCreateMetadata;
-              description = `${description} "${workspaceMetadata.workspaceName}"`;
-            }
-            break;
-          case ActivityType.CREATED_GROUP:
-            if (metadata) {
-              const groupMetadata = activity.metadata as GroupMetadata;
-              description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
-            }
-            break;
-          case ActivityType.DELETED_GROUP:
-            if (metadata) {
-              const groupMetadata = activity.metadata as GroupMetadata;
-              description = `${description} "${groupMetadata.name} - (${groupMetadata.type}) group"`;
-            }
-            break;
-          case ActivityType.POSTED_MESSAGE:
-            if (metadata) {
-              const chatMetadata = activity.metadata as ChatMetadata;
-              description = `${description} in group "${chatMetadata.groupName}"`;
-            }
-            break;
-          case ActivityType.GENERATED_STUDY_PLAN:
-            description = `${description}`;
-            break;
-          case ActivityType.STARTED_QUIZ:
-            if (metadata) {
-              const quizMetadata = activity.metadata as QuizMetadata;
-              description = `${description} "${quizMetadata.quizTitle}"`;
-            }
-            break;
-          case ActivityType.SUBMITTED_QUIZ:
-            if (metadata) {
-              const quizMetadata = activity.metadata as QuizMetadata;
-              description = `${description} "${quizMetadata.quizTitle}"`;
-            }
-            break;
-          case ActivityType.CREATED_QUIZ:
-            if (metadata) {
-              const quizMetadata = activity.metadata as CreateQuizMetadata;
-              description = `${description} "${quizMetadata.quizTitle}" for group "${quizMetadata.groupName}" (due: ${quizMetadata.dueDate})`;
-            }
-            break;
-          default:
-            break;
-        }
-
-        return {
-          ...activity,
-          description,
-        };
-      });
-
-      const activitiesWithTime = formattedActivities.map((activity) => {
-        // console.log('Backend activity:', activity); // Debug log
-        return {
-          id: activity.id,
-          category: activity.activity_category || activity.category, // Try both possible field names
-          activity_type: activity.activity_type,
-          description: activity.description,
-          time: this.getTimeDifference(activity.created_at),
-        };
-      });
+      // Format activities using the helper function
+      const formattedActivities =
+        this.formatActivitiesWithDescriptionAndTime(activities);
 
       return {
         success: true,
-        data: activitiesWithTime,
+        data: formattedActivities,
         message: `Fetched ${formattedActivities.length} recent activities for user ${user_id}`,
         status: 200,
       };
@@ -505,7 +537,260 @@ export class AnalyticsMsService {
     }
   }
 
-  //Helper funciton to get elapsed time from activity
+  // =============================================
+  // FETCH USER GROUP ACTIVITIES
+  // =============================================
+  async fetchUserGroupActivities(user_id: string, limit = 10) {
+    try {
+      // First, get all groups the user belongs to from workspace-ms
+      this.logger.debug('Calling workspace service to get user groups');
+      const groupsResponse = await lastValueFrom(
+        this.workspaceClient.send(
+          { cmd: 'get_groups_by_user' },
+          { userId: user_id },
+        ),
+      );
+
+      this.logger.debug(
+        'Groups response received:',
+        JSON.stringify(groupsResponse),
+      );
+
+      // Build groupId to groupInfo map
+      const groupInfoMap = {};
+      if (!groupsResponse || !groupsResponse.success || !groupsResponse.data) {
+        this.logger.error(
+          `Failed to get groups for user ${user_id}. Response:`,
+          JSON.stringify(groupsResponse),
+        );
+        return {
+          success: false,
+          message: 'Failed to get user groups',
+          status: 400,
+        };
+      }
+
+      groupsResponse.data.forEach((group) => {
+        groupInfoMap[group.groupId] = {
+          groupName: group.groupName,
+          workspaceId: group.workspaceId,
+          workspaceName: group.workspaceName,
+        };
+      });
+
+      // Extract group IDs (use the keys from the map for consistency)
+      const groupIds = Object.keys(groupInfoMap);
+      this.logger.debug(
+        `Found ${groupIds.length} groups for user ${user_id}:`,
+        groupIds,
+      );
+
+      if (groupIds.length === 0) {
+        this.logger.debug(`User ${user_id} doesn't belong to any groups`);
+        // User doesn't belong to any groups
+        return {
+          success: true,
+          data: [],
+          message: 'User does not belong to any groups',
+          status: 200,
+        };
+      }
+
+      // Query activities where metadata->>'groupId' is in the list of group IDs
+      this.logger.debug('Querying activities with groupIds:', groupIds);
+
+      // First, let's see what raw activities look like
+      const rawActivities = await this.userActivityRepo
+        .createQueryBuilder('activity')
+        .where(`activity.metadata->>'groupId' IN (:...groupIds)`, { groupIds })
+        .andWhere('activity.activity_type != :login', {
+          login: ActivityType.LOGIN,
+        })
+        .orderBy('activity.created_at', 'DESC')
+        .limit(limit) // Use the provided limit for debugging
+        .getMany();
+
+      this.logger.debug(
+        'Raw activities from database:',
+        JSON.stringify(rawActivities, null, 2),
+      );
+
+      // If no activities found with metadata groupId, let's try a broader search
+      // and then filter based on description patterns or other criteria
+      let activities;
+      if (rawActivities.length === 0) {
+        this.logger.debug(
+          'No activities found with metadata groupId, trying broader search...',
+        );
+
+        // Get recent activities and check if any descriptions contain group IDs
+        activities = await this.userActivityRepo
+          .createQueryBuilder('activity')
+          .select([
+            'activity.id as id',
+            'activity.user_id as user_id',
+            'activity.category as category',
+            'activity.activity_type as activity_type',
+            'activity.description as description',
+            'activity.metadata as metadata',
+            'activity.created_at as created_at',
+          ])
+          .andWhere('activity.activity_type != :login', {
+            login: ActivityType.LOGIN,
+          })
+          .orderBy('activity.created_at', 'DESC')
+          .limit(limit * 2) // Get more to filter
+          .getRawMany();
+
+        // Filter activities that mention any of our group IDs in description
+        activities = activities
+          .filter((activity) => {
+            const description = activity.description || '';
+            return groupIds.some((groupId) => description.includes(groupId));
+          })
+          .slice(0, limit);
+
+        this.logger.debug(
+          `Found ${activities.length} activities by description matching`,
+        );
+      } else {
+        activities = await this.userActivityRepo
+          .createQueryBuilder('activity')
+          .select([
+            'activity.id as id',
+            'activity.user_id as user_id',
+            'activity.category as category',
+            'activity.activity_type as activity_type',
+            'activity.description as description',
+            'activity.metadata as metadata',
+            'activity.created_at as created_at',
+          ])
+          .where(`activity.metadata->>'groupId' IN (:...groupIds)`, {
+            groupIds,
+          })
+          .andWhere('activity.activity_type != :login', {
+            login: ActivityType.LOGIN,
+          })
+          .orderBy('activity.created_at', 'DESC')
+          .limit(limit)
+          .getRawMany();
+      }
+
+      this.logger.debug(`Found ${activities.length} activities for groups`);
+
+      // Let's also check if there are ANY activities with metadata
+      const anyActivitiesWithMetadata = await this.userActivityRepo
+        .createQueryBuilder('activity')
+        .where('activity.metadata IS NOT NULL')
+        .limit(3)
+        .getMany();
+
+      this.logger.debug(
+        'Sample activities with metadata:',
+        JSON.stringify(anyActivitiesWithMetadata, null, 2),
+      );
+
+      // Format activities using the helper function
+      const formattedActivities =
+        this.formatActivitiesWithDescriptionAndTime(activities);
+
+      // 1. Collect unique user IDs from activities
+      const userIds = Array.from(
+        new Set(activities.map((a) => a.user_id).filter(Boolean)),
+      );
+      this.logger.debug(
+        `Collected ${userIds.length} unique user IDs:`,
+        userIds,
+      );
+
+      // Declare map in outer scope so it's available after the try/catch
+      let userIdNameMap: Record<string, string> = {};
+
+      if (userIds.length > 0) {
+        try {
+          // 2. Call batch endpoint
+          this.logger.debug('Fetching user names from auth service');
+          const userRes = await lastValueFrom(
+            this.authClient.send({ cmd: 'get_users_by_ids' }, { userIds }),
+          );
+          this.logger.debug('User response received:', JSON.stringify(userRes));
+          //buildUserIdNameMap
+          userIdNameMap = this.buildUserIdNameMap(userRes);
+        } catch (error) {
+          this.logger.error(
+            'Error fetching user_ids from auth-ms.service for usergroups recent activity Logging',
+            error.stack,
+          );
+          return {
+            success: false,
+            message:
+              'Failed to fetch user information for group activities',
+            status: 500,
+          };
+        }
+      }
+
+      this.logger.debug('Combining activities with user names and group info');
+      this.logger.debug('GroupInfoMap contents:', JSON.stringify(groupInfoMap));
+
+      const formattedWithNamesAndGroups = formattedActivities.map(
+        (activity) => {
+          this.logger.debug(
+            'Processing activity metadata:',
+            JSON.stringify(activity.metadata),
+          );
+          this.logger.debug('Looking for groupId:', activity.metadata?.groupId);
+          this.logger.debug(
+            'GroupInfo found:',
+            groupInfoMap[activity.metadata?.groupId],
+          );
+
+          const result = {
+            ...activity,
+            user_name: activity.user_id
+              ? userIdNameMap[activity.user_id] || 'Unknown User'
+              : 'Unknown User',
+            group_name: activity.metadata?.groupId
+              ? groupInfoMap[activity.metadata.groupId]?.groupName ||
+                'Unknown Group'
+              : 'Unknown Group',
+            workspace_id: activity.metadata?.groupId
+              ? groupInfoMap[activity.metadata.groupId]?.workspaceId
+              : undefined,
+            workspace_name: activity.metadata?.groupId
+              ? groupInfoMap[activity.metadata.groupId]?.workspaceName ||
+                'Unknown Workspace'
+              : 'Unknown Workspace',
+          };
+          this.logger.debug('Mapped activity:', JSON.stringify(result));
+          return result;
+        },
+      );
+
+      this.logger.debug(
+        `Successfully processed ${formattedWithNamesAndGroups.length} group activities`,
+      );
+      return {
+        success: true,
+        data: formattedWithNamesAndGroups,
+        message: `Fetched ${formattedWithNamesAndGroups.length} recent activities from user's groups`,
+        status: 200,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Failed to fetch user group activities - Error details:',
+        error.stack,
+      );
+      this.logger.error('Error message:', error.message);
+      return {
+        success: false,
+        message: 'Failed to fetch user group activities',
+        status: 500,
+      };
+    }
+  }
+
+  //Helper function to get elapsed time from activity
   private getTimeDifference(createdAt: Date | string): string {
     // Get current time in local timezone
     const now = new Date();

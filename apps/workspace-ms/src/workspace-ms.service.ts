@@ -828,7 +828,11 @@ export class WorkspaceMsService {
       });
 
       if (!userWorkspaces.length) {
-        return [];
+        return {
+          success: true,
+          message: 'No workspaces found for user',
+          data: [],
+        };
       }
 
       const workspaceInfo = userWorkspaces.map((uw) => {

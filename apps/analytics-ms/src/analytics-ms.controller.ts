@@ -61,4 +61,15 @@ export class AnalyticsMsController {
     const { user_id } = payload;
     return this.analyticsService.getUserCurrentStreakDays(user_id);
   }
+
+  // =============================================
+  // FETCH USER GROUP ACTIVITIES
+  // =============================================
+  @MessagePattern({ cmd: 'get_user_group_activities' })
+  async fetchUserGroupActivities(
+    @Payload() payload: { user_id: string; limit?: number },
+  ): Promise<ServiceResponse<any>> {
+    const { user_id, limit } = payload;
+    return this.analyticsService.fetchUserGroupActivities(user_id, limit || 10);
+  }
 }

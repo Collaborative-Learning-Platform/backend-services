@@ -56,4 +56,9 @@ export class AiMsController {
   deleteFlashcard(data: { flashcardId: string; userId: string }) {
     return this.aiMsService.deleteFlashcard(data.flashcardId, data.userId);
   }
+
+  @MessagePattern({ cmd: 'fetch_flashcard_stats' })
+  fetchFlashcardStats(data: { userId: string }) {
+    return this.aiMsService.fetchFlashcardStats(data.userId);
+  }
 }

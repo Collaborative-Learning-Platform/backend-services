@@ -29,6 +29,10 @@ export class DashboardController {
   //     recentActivity: [],
   //   });
 
+  // =============================================
+  // FOR USER DASHBOARD
+  // =============================================
+
   @Get('userStats/:user_id')
   async getUserStats(@Param('user_id') userId: string, @Res() res: Response) {
     try {
@@ -121,6 +125,49 @@ export class DashboardController {
       return res.json({
         success: false,
         message: 'Error fetching recent user activities',
+        error: error.message,
+      });
+    }
+  }
+
+  // =============================================
+  // FOR TUTOR DASHBOARD
+  // =============================================
+  @Get('groupActivity/:user_id')
+  async getUserGroupActivities(
+    @Param('user_id') userId: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const response = await lastValueFrom(
+        this.AnalyticsClient.send(
+          { cmd: 'get_user_group_activities' },
+          { user_id: userId },
+        ),
+      );
+
+      if (response?.error) {
+        const ret = handleValidationError(response.error);
+        return res.json(ret);
+      }
+
+      if (!response?.success) {
+        return res.json({
+          success: false,
+          message:
+            response.message || 'Failed to retrieve user group activities',
+          status: response.status || 400,
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: response.data,
+      });
+    } catch (error) {
+      return res.json({
+        success: false,
+        message: 'Error fetching user group activities',
         error: error.message,
       });
     }
