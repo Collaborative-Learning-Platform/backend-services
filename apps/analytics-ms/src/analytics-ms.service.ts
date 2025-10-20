@@ -422,10 +422,10 @@ export class AnalyticsMsService {
         message: 'Engagement comparison fetched successfully',
       };
     } catch (err) {
-      this.logger.error('Error occured when comparing engagement');
+      this.logger.error('Error occurred when comparing engagement');
       return {
         success: false,
-        message: 'Error occured when comparing engagement',
+        message: 'Error occurred when comparing engagement',
         status: 500,
       };
     }
