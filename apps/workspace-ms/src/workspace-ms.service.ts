@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Workspace } from './entity/workspace.entity';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, MoreThan, LessThan } from 'typeorm';
 import { UserWorkspace } from './entity/user-workspace.entity';
 import { createGroupDto } from './dto/createGroup.dto';
 import { Group } from './entity/group.entity';
@@ -1083,5 +1083,109 @@ export class WorkspaceMsService {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+  }
+
+  //Get the total Number of Workspaces and Groups
+  // Returns the total number of workspaces and groups
+  async getWorkspaceAndGroupCount(): Promise<{
+    success: boolean;
+    workspaces?: number;
+    groups?: number;
+    message?: string;
+  }> {
+    try {
+      const [workspaceCount, groupCount] = await Promise.all([
+        this.workspaceRepository.count(),
+        this.groupRepository.count(),
+      ]);
+      return { success: true, workspaces: workspaceCount, groups: groupCount };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to get counts: ${error.message}`,
+      };
+    }
+  }
+
+  //Get workspace and group counts with week-over-week changes
+  async getWorkspaceAndGroupCountWithChanges(): Promise<{
+    success: boolean;
+    workspaces?: number;
+    groups?: number;
+    workspaceCountChange?: number;
+    groupCountChange?: number;
+    workspacePercentChange?: number;
+    groupPercentChange?: number;
+    lastWeekCounts?: {
+      workspaces: number;
+      groups: number;
+    };
+    message?: string;
+  }> {
+    try {
+      // Get current date boundaries
+      const now = new Date();
+      const startOfThisWeek = new Date(now);
+      startOfThisWeek.setDate(now.getDate() - 7); // 7 days ago
+      startOfThisWeek.setHours(0, 0, 0, 0);
+
+      // Current counts
+      const [workspaceCount, groupCount] = await Promise.all([
+        this.workspaceRepository.count(),
+        this.groupRepository.count(),
+      ]);
+
+      // Last week counts (entities created before a week ago)
+      const [workspaceCountLastWeek, groupCountLastWeek] = await Promise.all([
+        this.workspaceRepository.count({
+          where: {
+            createdAt: LessThan(startOfThisWeek),
+          },
+        }),
+        this.groupRepository.count({
+          where: {
+            createdAt: LessThan(startOfThisWeek),
+          },
+        }),
+      ]);
+
+      // Calculate changes
+      const workspaceCountChange = workspaceCount - workspaceCountLastWeek;
+      const groupCountChange = groupCount - groupCountLastWeek;
+
+      // Calculate percentage changes
+      const workspacePercentChange =
+        workspaceCountLastWeek > 0
+          ? (workspaceCountChange / workspaceCountLastWeek) * 100
+          : workspaceCountChange > 0
+            ? 100
+            : 0;
+
+      const groupPercentChange =
+        groupCountLastWeek > 0
+          ? (groupCountChange / groupCountLastWeek) * 100
+          : groupCountChange > 0
+            ? 100
+            : 0;
+
+      return {
+        success: true,
+        workspaces: workspaceCount,
+        groups: groupCount,
+        workspaceCountChange,
+        groupCountChange,
+        workspacePercentChange: Number(workspacePercentChange.toFixed(2)),
+        groupPercentChange: Number(groupPercentChange.toFixed(2)),
+        lastWeekCounts: {
+          workspaces: workspaceCountLastWeek,
+          groups: groupCountLastWeek,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to get counts with changes: ${error.message}`,
+      };
+    }
   }
 }

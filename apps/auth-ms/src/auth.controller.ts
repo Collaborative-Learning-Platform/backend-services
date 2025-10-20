@@ -45,6 +45,11 @@ export class AuthController {
     return this.authService.getUserCount();
   }
 
+  @MessagePattern({ cmd: 'auth_get_users_count_with_changes' })
+  async getUserCountsWithChanges() {
+    return this.authService.getUserCountsWithChanges();
+  }
+
   @MessagePattern({ cmd: 'auth_store_profile_pic_url' })
   async storeProfilePicUrl(
     @Payload() data: { userId: string; profilePicUrl: string },
