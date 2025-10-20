@@ -260,7 +260,7 @@ export class DashboardController {
       );
 
       if (analyticsResponse?.error) {
-        const ret = handleValidationError(workspaceResponse.error);
+        const ret = handleValidationError(analyticsResponse.error);
         return res.json(ret);
       }
       if (!analyticsResponse?.success) {
