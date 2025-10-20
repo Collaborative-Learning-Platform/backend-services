@@ -756,7 +756,7 @@ export class AnalyticsMsService {
           login: ActivityType.LOGIN,
         })
         .orderBy('activity.created_at', 'DESC')
-        .limit(5) // Just get a few for debugging
+        .limit(limit) // Use the provided limit for debugging
         .getMany();
 
       this.logger.debug(
@@ -873,7 +873,7 @@ export class AnalyticsMsService {
           return {
             success: false,
             message:
-              'Error fetching user names for user group activities(tutor)',
+              'Failed to fetch user information for group activities',
             status: 500,
           };
         }
@@ -939,7 +939,7 @@ export class AnalyticsMsService {
     }
   }
 
-  //Helper funciton to get elapsed time from activity
+  //Helper function to get elapsed time from activity
   private getTimeDifference(createdAt: Date | string): string {
     // Get current time in local timezone
     const now = new Date();

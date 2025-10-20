@@ -852,7 +852,7 @@ export class AiMsService {
     } catch (error) {
       return {
         success: false,
-        message: 'Couldnt fetch Flashcard Data',
+        message: "Couldn't fetch Flashcard Data",
         status: 500,
       };
     }
