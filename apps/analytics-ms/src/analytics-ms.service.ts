@@ -301,7 +301,7 @@ export class AnalyticsMsService {
       this.authClient.send({ cmd: 'auth_get_users_count' }, {}),
     );
 
-    const totalUsers = userCountResponse?.data ?? 0;
+    const totalUsers = userCountResponse?.data?.totalCount ?? 0;
 
     // Calculate engagement percentage using numeric active_users value
     const activeUserCount = dailyRecord.active_users ?? 0;
