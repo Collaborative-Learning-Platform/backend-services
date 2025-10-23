@@ -1,4 +1,4 @@
-import { Controller} from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { LoginDto } from './dto/login.dto';
@@ -10,10 +10,8 @@ import { FirstTimeLoginPasswordChangeDTO } from './dto/FirstTimeLoginPasswordCha
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-
   @MessagePattern({ cmd: 'auth_login' })
   async login(@Payload() data: LoginDto) {
-    
     return this.authService.login(data);
   }
 
@@ -21,7 +19,6 @@ export class AuthController {
   async firstTimeLogin(@Payload() data: FirstTimeLoginPasswordChangeDTO) {
     return this.authService.firstTimeLogin(data.user_id, data.new_password);
   }
-
 
   @MessagePattern({ cmd: 'auth_refresh_token' })
   async refresh(@Payload() data: refreshTokenDTO) {
@@ -38,21 +35,29 @@ export class AuthController {
     return this.authService.resetPassword(data.token, data.newPassword);
   }
 
-
-
-
   @MessagePattern({ cmd: 'auth_get_user' })
   async getUser(@Payload() data: { userId: string }) {
-    
     return this.authService.getUser(data.userId);
   }
 
-  @MessagePattern({cmd:'auth_store_profile_pic_url'})
-  async storeProfilePicUrl(@Payload() data: { userId: string; profilePicUrl: string }) {
+  @MessagePattern({ cmd: 'auth_get_users_count' })
+  async getUserCount() {
+    return this.authService.getUserCount();
+  }
+
+  @MessagePattern({ cmd: 'auth_get_users_count_with_changes' })
+  async getUserCountsWithChanges() {
+    return this.authService.getUserCountsWithChanges();
+  }
+
+  @MessagePattern({ cmd: 'auth_store_profile_pic_url' })
+  async storeProfilePicUrl(
+    @Payload() data: { userId: string; profilePicUrl: string },
+  ) {
     return this.authService.storeProfilePicUrl(data.userId, data.profilePicUrl);
   }
 
-  @MessagePattern({ cmd:'auth_get_users' })
+  @MessagePattern({ cmd: 'auth_get_users' })
   async getUsers() {
     return this.authService.getUsers();
   }
@@ -64,19 +69,19 @@ export class AuthController {
 
   @MessagePattern({ cmd: 'bulk_register_file' })
   async bulkRegisterFile(fileData: { originalname: string; buffer: any }) {
-
-
     // Convert TCP-transferred buffer object to real Buffer
     let buffer: Buffer;
     if (Buffer.isBuffer(fileData.buffer)) {
       buffer = fileData.buffer;
-    } else if (fileData.buffer?.type === 'Buffer' && Array.isArray(fileData.buffer.data)) {
+    } else if (
+      fileData.buffer?.type === 'Buffer' &&
+      Array.isArray(fileData.buffer.data)
+    ) {
       buffer = Buffer.from(fileData.buffer.data);
     } else {
       throw new Error('Invalid file buffer received');
     }
 
-    
     return this.authService.processFileAndCreateUsers({
       originalname: fileData.originalname,
       buffer,

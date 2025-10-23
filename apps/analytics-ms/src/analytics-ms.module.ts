@@ -23,6 +23,14 @@ const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
           port: 4000,
         },
       },
+      {
+        name: 'WORKSPACE_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: isDocker ? 'workspace-ms' : '127.0.0.1',
+          port: 4003,
+        },
+      },
     ]),
     TypeOrmModule.forRoot({
       type: 'postgres',

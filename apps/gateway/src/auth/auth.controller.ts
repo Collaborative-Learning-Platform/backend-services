@@ -19,25 +19,22 @@ import * as multer from 'multer';
 import { lastValueFrom } from 'rxjs';
 import { handleValidationError } from '../utils/validationErrorHandler';
 
-
 @Controller('auth')
 export class AuthController {
-  constructor(@Inject('AUTH_SERVICE') private readonly authClient: ClientProxy) {}
+  constructor(
+    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
+  ) {}
 
-  
   @Post('login')
   async login(
     @Body() data: { email: string; password: string },
     @Res() res: Response,
   ) {
-    
-
-    
     const response = await lastValueFrom(
       this.authClient.send({ cmd: 'auth_login' }, data),
     );
 
-    console.log(response)
+    console.log(response);
 
     // Handling validation errors from microservice
     if (response?.error) {
@@ -45,38 +42,36 @@ export class AuthController {
       return res.json(ret);
     }
 
-
-
     //Handling unsuccessful login attempts
     if (!response.success) {
-      
       const ret = {
         success: false,
         message: response.message || 'Login failed',
         status: response.status || 400,
-      }
+      };
       return res.json(ret);
     }
 
+    await this.setAuthCookies(
+      res,
+      response.access_token,
+      response.refresh_token,
+    );
 
-
-    await this.setAuthCookies(res, response.access_token, response.refresh_token);
-
-
-    
     return res.json({
-       success: true,
-       role:response.role,
-       user_id:response.id,
-       firstTimeLogin: response.firstTimeLogin,
-      });
+      success: true,
+      role: response.role,
+      user_id: response.id,
+      firstTimeLogin: response.firstTimeLogin,
+    });
   }
-
-
 
   //first time login to change password
   @Post('first-time-login')
-  async firstTimeLogin(@Body() data: { user_id: string; new_password: string }, @Res() res: Response) {
+  async firstTimeLogin(
+    @Body() data: { user_id: string; new_password: string },
+    @Res() res: Response,
+  ) {
     const response = await lastValueFrom(
       this.authClient.send({ cmd: 'auth_first_time_login' }, data),
     );
@@ -99,11 +94,9 @@ export class AuthController {
     });
   }
 
-
   //Forgot password endpoint to initiate password reset process
   @Post('forgot-password')
   async forgotPassword(@Body() data: { email: string }, @Res() res: Response) {
-    
     const response = await lastValueFrom(
       this.authClient.send({ cmd: 'auth_forgot_password' }, data),
     );
@@ -128,7 +121,10 @@ export class AuthController {
   }
 
   @Post('reset-password')
-  async resetPassword(@Body() data: { token: string; newPassword: string }, @Res() res: Response) {
+  async resetPassword(
+    @Body() data: { token: string; newPassword: string },
+    @Res() res: Response,
+  ) {
     const response = await lastValueFrom(
       this.authClient.send({ cmd: 'auth_reset_password' }, data),
     );
@@ -152,40 +148,33 @@ export class AuthController {
     });
   }
 
-  
-
-
-
   //Refresh token endpoint to issue new access and refresh tokens
   @Get('refresh-token')
   async refreshToken(@Req() req: Request, @Res() res: Response) {
-   
     const refresh_token = req.cookies['refresh_token'];
-    
 
-     if (!refresh_token) {
+    if (!refresh_token) {
       throw new UnauthorizedException('Refresh token not found');
     }
 
     const response = await lastValueFrom(
       this.authClient.send({ cmd: 'auth_refresh_token' }, { refresh_token }),
     );
-    
 
     if (response?.error) {
       const ret = handleValidationError(response.error);
-      if(ret.status === 403 || ret.status === 401){
+      if (ret.status === 403 || ret.status === 401) {
         throw new UnauthorizedException('Invalid refresh token');
       }
       return res.json(ret);
     }
 
     if (!response?.access_token || !response?.refresh_token) {
-       return res.json({
-         success: false,
-         message: 'Invalid refresh response',
-         status: 500,
-       });
+      return res.json({
+        success: false,
+        message: 'Invalid refresh response',
+        status: 500,
+      });
     }
 
     this.setAuthCookies(res, response.access_token, response.refresh_token);
@@ -196,30 +185,31 @@ export class AuthController {
       role: response.role,
       user_id: response.id,
     });
-    }
+  }
 
+  //Supporting function to set HttpOnly cookies
+  private async setAuthCookies(
+    res: Response,
+    access_token: string,
+    refresh_token: string,
+  ) {
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none' as const,
+    };
 
-
-
-  //Supporting function to set HttpOnly cookies  
-  private async setAuthCookies(res: Response, access_token: string, refresh_token: string) {
-  const cookieOptions = {
-    httpOnly: true,
-    secure: true,         
-    sameSite: 'none' as const, 
-
-  };
-
-  res.cookie('access_token', access_token, cookieOptions);
-  res.cookie('refresh_token', refresh_token, cookieOptions);
-}
-
-
+    res.cookie('access_token', access_token, cookieOptions);
+    res.cookie('refresh_token', refresh_token, cookieOptions);
+  }
 
   //Bulk user registration via CSV/Excel file upload
   @Post('bulk-upload')
   @UseInterceptors(FileInterceptor('file', { storage: multer.memoryStorage() }))
-  async bulkUpload(@UploadedFile() file: Express.Multer.File, @Res() res: Response) {
+  async bulkUpload(
+    @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response,
+  ) {
     if (!file) {
       throw new HttpException('No file provided', 400);
     }
@@ -228,9 +218,9 @@ export class AuthController {
       mimetype: file.mimetype,
       buffer: file.buffer,
     };
-    
+
     const response = await lastValueFrom(
-      this.authClient.send({ cmd: 'bulk_register_file' }, fileData)
+      this.authClient.send({ cmd: 'bulk_register_file' }, fileData),
     );
 
     // console.log(response)
@@ -239,18 +229,12 @@ export class AuthController {
       return res.json(ret);
     }
 
-
-
     return res.json(response);
   }
-
-
-  
 
   //get user details by id
   @Get('get-user/:userId')
   async getUser(@Param('userId') userId: string, @Res() res: Response) {
-    
     const response = await lastValueFrom(
       this.authClient.send({ cmd: 'auth_get_user' }, { userId }),
     );
@@ -274,6 +258,30 @@ export class AuthController {
     });
   }
 
+  @Get('users/count')
+  async getUsersCount(@Res() res: Response) {
+    const response = await lastValueFrom(
+      this.authClient.send({ cmd: 'auth_get_users_count' }, {}),
+    );
+
+    if (response?.error) {
+      const ret = handleValidationError(response.error);
+      return res.json(ret);
+    }
+
+    if (!response?.success) {
+      return res.json({
+        success: false,
+        message: response.message || 'Failed to retrieve user count',
+        status: response.status || 400,
+      });
+    }
+
+    return res.json({
+      success: true,
+      count: response.data,
+    });
+  }
 
   //get all users in the system
   @Get('users')
@@ -300,6 +308,4 @@ export class AuthController {
       users: response.users,
     });
   }
-
 }
-

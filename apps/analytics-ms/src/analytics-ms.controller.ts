@@ -61,4 +61,34 @@ export class AnalyticsMsController {
     const { user_id } = payload;
     return this.analyticsService.getUserCurrentStreakDays(user_id);
   }
+
+  // =============================================
+  // FETCH USER GROUP ACTIVITIES
+  // =============================================
+  @MessagePattern({ cmd: 'get_user_group_activities' })
+  async fetchUserGroupActivities(
+    @Payload() payload: { user_id: string; limit?: number },
+  ): Promise<ServiceResponse<any>> {
+    const { user_id, limit } = payload;
+    return this.analyticsService.fetchUserGroupActivities(user_id, limit || 10);
+  }
+
+  // =============================================
+  // COMPARE ENGAGEMENT FOR LAST TWO WEEKS
+  // =============================================
+  @MessagePattern({ cmd: 'compare_and_get_last_two_weeks_engagement' })
+  async compareLastTwoWeeksEngagement(): Promise<ServiceResponse<any>> {
+    return this.analyticsService.compareLastTwoWeeksEngagement();
+  }
+
+  // =============================================
+  // GET RECENT SYSTEM ACTIVITY FOR ADMIN
+  // =============================================
+  @MessagePattern({ cmd: 'get_recent_system_activity' })
+  async getRecentSystemActivity(
+    @Payload() payload: { limit?: number },
+  ): Promise<ServiceResponse<any>> {
+    const { limit } = payload;
+    return this.analyticsService.getRecentSystemActivity(limit || 5);
+  }
 }

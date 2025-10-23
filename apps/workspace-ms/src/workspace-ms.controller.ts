@@ -178,4 +178,14 @@ export class WorkspaceMsController {
     console.log('Received delete group request at microservice:', data);
     return this.workspaceMsService.deleteGroup(data);
   }
+
+  @MessagePattern({ cmd: 'get_workspace_and_group_count' })
+  async getWorkspaceAndGroupCount() {
+    return await this.workspaceMsService.getWorkspaceAndGroupCount();
+  }
+
+  @MessagePattern({ cmd: 'get_workspace_and_group_count_with_changes' })
+  async getWorkspaceAndGroupCountWithChanges() {
+    return await this.workspaceMsService.getWorkspaceAndGroupCountWithChanges();
+  }
 }
