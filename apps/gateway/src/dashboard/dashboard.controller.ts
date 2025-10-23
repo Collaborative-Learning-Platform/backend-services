@@ -9,6 +9,7 @@ export class DashboardController {
   constructor(
     @Inject('WORKSPACE_SERVICE') private readonly WorkspaceClient: ClientProxy,
     @Inject('ANALYTICS_SERVICE') private readonly AnalyticsClient: ClientProxy,
+    @Inject('AUTH_SERVICE') private readonly AuthClient: ClientProxy,
   ) {}
 
   //getting workspace count and group count for a user
@@ -96,6 +97,11 @@ export class DashboardController {
     @Res() res: Response,
   ) {
     try {
+      console.log(
+        'Dashboard Controller: getRecentUserActivity called for user_id:',
+        userId,
+      );
+
       const response = await lastValueFrom(
         this.AnalyticsClient.send(
           { cmd: 'get_recent_user_activities' },
@@ -103,12 +109,22 @@ export class DashboardController {
         ),
       );
 
+      console.log(
+        'Dashboard Controller: Analytics service response:',
+        JSON.stringify(response, null, 2),
+      );
+
       if (response?.error) {
+        console.log(
+          'Dashboard Controller: Response has error:',
+          response.error,
+        );
         const ret = handleValidationError(response.error);
         return res.json(ret);
       }
 
       if (!response?.success) {
+        console.log('Dashboard Controller: Response not successful:', response);
         return res.json({
           success: false,
           message:
@@ -117,6 +133,10 @@ export class DashboardController {
         });
       }
 
+      console.log(
+        'Dashboard Controller: Returning successful response with data:',
+        response.data,
+      );
       return res.json({
         success: true,
         data: response.data,
@@ -168,6 +188,168 @@ export class DashboardController {
       return res.json({
         success: false,
         message: 'Error fetching user group activities',
+        error: error.message,
+      });
+    }
+  }
+
+  // =============================================
+  // FOR ADMIN DASHBOARD
+  // =============================================
+
+  @Get('adminStats')
+  async getAdminStats(@Res() res: Response) {
+    try {
+      // Get the total number of users with changes from Auth-ms
+      const authResponse = await lastValueFrom(
+        this.AuthClient.send({ cmd: 'auth_get_users_count_with_changes' }, {}),
+      );
+
+      console.log('Auth Response:', JSON.stringify(authResponse, null, 2));
+
+      if (authResponse?.error) {
+        const ret = handleValidationError(authResponse.error);
+        return res.json(ret);
+      }
+      if (!authResponse?.success) {
+        return res.json({
+          success: false,
+          message:
+            authResponse.message ||
+            'Failed to retrieve user count with changes',
+          status: authResponse.status || 400,
+        });
+      }
+
+      const workspaceResponse = await lastValueFrom(
+        this.WorkspaceClient.send(
+          { cmd: 'get_workspace_and_group_count_with_changes' },
+          {},
+        ),
+      );
+
+      console.log(
+        'Workspace Response:',
+        JSON.stringify(workspaceResponse, null, 2),
+      );
+
+      if (workspaceResponse?.error) {
+        const ret = handleValidationError(workspaceResponse.error);
+        return res.json(ret);
+      }
+      if (!workspaceResponse?.success) {
+        return res.json({
+          success: false,
+          message:
+            workspaceResponse.message ||
+            'Failed to retrieve workspace/group count',
+          status: workspaceResponse.status || 400,
+        });
+      }
+
+      const analyticsResponse = await lastValueFrom(
+        this.AnalyticsClient.send(
+          { cmd: 'compare_and_get_last_two_weeks_engagement' },
+          {},
+        ),
+      );
+
+      console.log(
+        'Analytics Response:',
+        JSON.stringify(analyticsResponse, null, 2),
+      );
+
+      if (analyticsResponse?.error) {
+        const ret = handleValidationError(analyticsResponse.error);
+        return res.json(ret);
+      }
+      if (!analyticsResponse?.success) {
+        return res.json({
+          success: false,
+          message:
+            analyticsResponse.message ||
+            'Failed to retrieve analytics dashboard data for Admin',
+          status: analyticsResponse.status || 400,
+        });
+      }
+
+      const numWorkspaces = workspaceResponse.workspaces;
+      const numGroups = workspaceResponse.groups;
+      const workspaceCountChange = workspaceResponse.workspaceCountChange;
+      const groupCountChange = workspaceResponse.groupCountChange;
+      const workspacePercentChange = workspaceResponse.workspacePercentChange;
+      const groupPercentChange = workspaceResponse.groupPercentChange;
+      const lastWeekCounts = workspaceResponse.lastWeekCounts;
+      const authInfo = authResponse.data;
+      const engagementInfo = analyticsResponse.data;
+
+      console.log('Final response data:', {
+        numWorkspaces,
+        numGroups,
+        workspaceCountChange,
+        groupCountChange,
+        workspacePercentChange,
+        groupPercentChange,
+        lastWeekCounts,
+        authInfo,
+        engagementInfo,
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          workspaces: numWorkspaces,
+          groups: numGroups,
+          workspaceCountChange,
+          groupCountChange,
+          workspacePercentChange,
+          groupPercentChange,
+          lastWeekCounts,
+          authInfo,
+          engagementInfo,
+        },
+      });
+    } catch (error) {
+      return res.json({
+        success: false,
+        message: 'Error fetching admin dashboard stats',
+        error: error.message,
+      });
+    }
+  }
+
+  @Get('systemActivity')
+  async getSystemActivity(@Res() res: Response) {
+    try {
+      const response = await lastValueFrom(
+        this.AnalyticsClient.send(
+          { cmd: 'get_recent_system_activity' },
+          { limit: 5 },
+        ),
+      );
+
+      if (response?.error) {
+        const ret = handleValidationError(response.error);
+        return res.json(ret);
+      }
+
+      if (!response?.success) {
+        return res.json({
+          success: false,
+          message:
+            response.message || 'Failed to retrieve recent system activity',
+          status: response.status || 400,
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: response.data,
+      });
+    } catch (error) {
+      return res.json({
+        success: false,
+        message: 'Error fetching recent system activity',
         error: error.message,
       });
     }

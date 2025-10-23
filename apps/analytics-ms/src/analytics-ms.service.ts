@@ -20,7 +20,7 @@ import {
   WorkspaceAddMetadata,
   WorkspaceCreateMetadata,
 } from 'libs/types/logger/logger-metadata.interface';
-import { Repository, Not } from 'typeorm';
+import { Repository, Not, Between } from 'typeorm';
 import { UserStreak } from './entity/user-streak.entity';
 import { startOfDay, subDays, isSameDay, endOfDay, format } from 'date-fns';
 import { DailyActiveUsers } from './entity/daily-active-users.entity';
@@ -197,21 +197,62 @@ export class AnalyticsMsService {
   // UPDATE DAILY ACTIVE USERS
   // =============================================
 
-  // =============================================
-  // BASE FUNCTION – works for both cron & live requests
-  // =============================================
+  // Returns the count of unique users active from start of today to now
+  private async getActiveUsersToday() {
+    const start = startOfDay(new Date());
+    const end = new Date();
 
-  private async calculateAndStoreDailyActiveUsers(dateRange?: {
-    start: Date;
-    end: Date;
-    label?: string;
-  }) {
-    const { start, end, label } = dateRange || {
-      // Default: previous day (for cron)
-      start: startOfDay(subDays(new Date(), 1)),
-      end: endOfDay(subDays(new Date(), 1)),
-      label: 'yesterday',
-    };
+    const logs = await this.userActivityRepo
+      .createQueryBuilder('log')
+      .select('DISTINCT log.user_id', 'user_id')
+      .where('log.created_at BETWEEN :start AND :end', { start, end })
+      .getRawMany();
+
+    return logs.length;
+  }
+
+  private async storeActiveUsersUptoNowToday() {
+    const start = startOfDay(new Date());
+    const end = new Date();
+
+    const logs = await this.userActivityRepo
+      .createQueryBuilder('log')
+      .select('DISTINCT log.user_id', 'user_id')
+      .where('log.created_at BETWEEN :start AND :end', { start, end })
+      .getRawMany();
+
+    const activeUserCount = logs.length;
+
+    // Find or create today's record
+    let dailyRecord = await this.dailyActiveUsersRepo.findOne({
+      where: { date: start },
+    });
+
+    if (dailyRecord) {
+      dailyRecord.active_users = activeUserCount;
+    } else {
+      dailyRecord = this.dailyActiveUsersRepo.create({
+        active_users: activeUserCount,
+        total_users: 0,
+        engagement: 0,
+      });
+
+      await this.dailyActiveUsersRepo.save(dailyRecord);
+    }
+
+    await this.dailyActiveUsersRepo.save(dailyRecord);
+
+    this.logger.log(
+      `Stored today's active users: ${activeUserCount} in daily_active_users table`,
+    );
+  }
+
+  private async calculateAndStoreDailyActiveUsers(date?: Date) {
+    // If no date is provided, use yesterday; else, use the provided date (today)
+
+    const targetDate = date ? new Date(date) : subDays(new Date(), 1);
+    const start = startOfDay(targetDate);
+    const end = endOfDay(targetDate);
 
     // Get unique user_ids who logged any activity in that date range
     const logs = await this.userActivityRepo
@@ -221,10 +262,9 @@ export class AnalyticsMsService {
       .getRawMany();
 
     const activeUserCount = logs.length;
-
-    // Use the "start" date (the day being analyzed)
     const dayLabel = format(start, 'yyyy-MM-dd');
 
+    // Use the Date object for DB lookup, not the string label
     let dailyRecord = await this.dailyActiveUsersRepo.findOne({
       where: { date: start },
     });
@@ -233,7 +273,6 @@ export class AnalyticsMsService {
       dailyRecord.active_users = activeUserCount;
     } else {
       dailyRecord = this.dailyActiveUsersRepo.create({
-        date: dayLabel,
         active_users: activeUserCount,
       });
     }
@@ -241,33 +280,64 @@ export class AnalyticsMsService {
     await this.dailyActiveUsersRepo.save(dailyRecord);
 
     this.logger.log(
-      `Daily active users recorded for ${label ?? dayLabel}: ${activeUserCount}`,
+      `Daily active users recorded for ${dayLabel}: ${activeUserCount}`,
     );
   }
 
-  // -- Crohn Job to calculate daily active users for the past day
+  private async calculateAndStoreDailyEngagement(date?: Date) {
+    // If no date is provided, use yesterday; else, use the provided date (today)
+    const targetDate = date ? new Date(date) : subDays(new Date(), 1);
+
+    let dailyRecord = await this.dailyActiveUsersRepo.findOne({
+      where: { date: startOfDay(targetDate) },
+    });
+
+    if (!dailyRecord || dailyRecord.active_users == null) {
+      throw new Error('Daily active user count not found for the given day');
+    }
+
+    // Fetch total users from Auth-ms
+    const userCountResponse = await lastValueFrom(
+      this.authClient.send({ cmd: 'auth_get_users_count' }, {}),
+    );
+
+    const totalUsers = userCountResponse?.data?.totalCount ?? 0;
+
+    // Calculate engagement percentage using numeric active_users value
+    const activeUserCount = dailyRecord.active_users ?? 0;
+    const engagement =
+      totalUsers > 0 ? (activeUserCount / totalUsers) * 100 : 0;
+
+    const dayLabel = format(targetDate, 'yyyy-MM-dd');
+
+    // Update and save the existing record
+    dailyRecord.total_users = totalUsers;
+    dailyRecord.engagement = engagement;
+
+    await this.dailyActiveUsersRepo.save(dailyRecord);
+
+    this.logger.log(
+      `Daily engagement recorded for ${dayLabel}: active=${activeUserCount}, total=${totalUsers}, engagement=${engagement.toFixed(2)}%`,
+    );
+  }
+
+  // -- Crohn Job to calculate daily active users + engagement for the past day
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async recordDailyActiveUsers() {
     this.logger.log('Running daily active user aggregation job...');
     await this.calculateAndStoreDailyActiveUsers(); // no params → uses yesterday by default
+
+    this.logger.log('Running daily engagement aggregation job...');
+    await this.calculateAndStoreDailyEngagement(); // no params → uses yesterday by default
   }
 
   // =============================================
   // FETCH DAILY ACTIVE USERS FOR A DATE RANGE
   // =============================================
-
   async fetchDailyActiveUsersForRange(dateRange: { start: Date; end: Date }) {
     try {
-      //Always calculate and store today's DAU first
-      const todayStart = startOfDay(new Date());
-      const todayEnd = endOfDay(new Date());
-
-      await this.calculateAndStoreDailyActiveUsers({
-        start: todayStart,
-        end: todayEnd,
-        label: 'today',
-      });
+      await this.storeActiveUsersUptoNowToday();
 
       // Determine range for fetching
       const start = startOfDay(dateRange.start);
@@ -298,6 +368,64 @@ export class AnalyticsMsService {
       return {
         success: false,
         message: 'Failed to fetch daily active users',
+        status: 500,
+      };
+    }
+  }
+
+  private async getAverageEngagementForPeriod(start: Date, end: Date) {
+    const records = await this.dailyActiveUsersRepo.find({
+      where: {
+        date: Between(startOfDay(start), startOfDay(end)),
+      },
+    });
+
+    if (!records.length) return 0;
+
+    const totalEngagement = records.reduce(
+      (sum, r) => sum + (r.engagement ?? 0),
+      0,
+    );
+    return totalEngagement / records.length;
+  }
+
+  async compareLastTwoWeeksEngagement() {
+    try {
+      const today = startOfDay(new Date());
+
+      // Last 7 days: today - 6 to today
+      const last7Start = subDays(today, 6);
+      const last7End = today;
+
+      // Previous 7 days: today - 13 to today - 7
+      const prev7Start = subDays(today, 13);
+      const prev7End = subDays(today, 7);
+
+      const last7Avg = await this.getAverageEngagementForPeriod(
+        last7Start,
+        last7End,
+      );
+      const prev7Avg = await this.getAverageEngagementForPeriod(
+        prev7Start,
+        prev7End,
+      );
+
+      return {
+        success: true,
+        data: {
+          last7Avg,
+          prev7Avg,
+          difference: last7Avg - prev7Avg,
+          percentChange:
+            prev7Avg === 0 ? null : ((last7Avg - prev7Avg) / prev7Avg) * 100,
+        },
+        message: 'Engagement comparison fetched successfully',
+      };
+    } catch (err) {
+      this.logger.error('Error occurred when comparing engagement');
+      return {
+        success: false,
+        message: 'Error occurred when comparing engagement',
         status: 500,
       };
     }
@@ -474,18 +602,39 @@ export class AnalyticsMsService {
         .limit(limit)
         .getRawMany();
 
-      // // Debug log to see raw activities with metadata
-      // activities.forEach((activity) => {
-      //   console.log('Raw activity with metadata:', {
-      //     type: activity.activity_type,
-      //     metadata: activity.metadata,
-      //     metadataType: typeof activity.metadata,
-      //   });
-      // });
+      // Debug log to see raw activities with metadata
+      console.log(
+        'Analytics Service: fetchRecentUserActivities called for user_id:',
+        user_id,
+      );
+      console.log(
+        'Analytics Service: Found activities count:',
+        activities.length,
+      );
+      activities.forEach((activity, index) => {
+        console.log(`Analytics Service: Activity ${index}:`, {
+          id: activity.id,
+          type: activity.activity_type,
+          category: activity.category,
+          description: activity.description,
+          metadata: activity.metadata,
+          metadataType: typeof activity.metadata,
+          created_at: activity.created_at,
+        });
+      });
 
       // Format activities using the helper function
       const formattedActivities =
         this.formatActivitiesWithDescriptionAndTime(activities);
+
+      console.log(
+        'Analytics Service: Formatted activities:',
+        JSON.stringify(formattedActivities, null, 2),
+      );
+      console.log(
+        'Analytics Service: Returning response with data length:',
+        formattedActivities.length,
+      );
 
       return {
         success: true,
@@ -829,6 +978,84 @@ export class AnalyticsMsService {
       return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
     } else {
       return 'Just now';
+    }
+  }
+
+  // =============================================
+  // GET RECENT SYSTEM ACTIVITY FOR ADMIN
+  // =============================================
+  async getRecentSystemActivity(limit = 5) {
+    try {
+      const activities = await this.userActivityRepo
+        .createQueryBuilder('activity')
+        .select([
+          'activity.id as id',
+          'activity.user_id as user_id',
+          'activity.role as role',
+          'activity.category as category',
+          'activity.activity_type as activity_type',
+          'activity.description as description',
+          'activity.metadata as metadata',
+          'activity.created_at as created_at',
+        ])
+        .orderBy('activity.created_at', 'DESC')
+        .limit(limit)
+        .getRawMany();
+
+      // Get unique user IDs to fetch user names
+      const userIds = Array.from(
+        new Set(activities.map((a) => a.user_id).filter(Boolean)),
+      );
+
+      let userIdNameMap: Record<string, string> = {};
+
+      if (userIds.length > 0) {
+        try {
+          const userResponse = await lastValueFrom(
+            this.authClient.send(
+              { cmd: 'get_users_by_ids' },
+              { userIds: userIds },
+            ),
+          );
+          userIdNameMap = this.buildUserIdNameMap(userResponse);
+        } catch (error) {
+          this.logger.warn(
+            'Failed to fetch user names for system activity',
+            error,
+          );
+        }
+      }
+
+      // Format activities with user names and time
+      const formattedActivities = activities.map((activity) => {
+        const userName = userIdNameMap[activity.user_id] || 'Unknown User';
+
+        return {
+          id: activity.id,
+          user_id: activity.user_id,
+          user_name: userName,
+          role: activity.role,
+          category: activity.category,
+          activity_type: activity.activity_type,
+          description: activity.description,
+          time: this.getTimeDifference(activity.created_at),
+          created_at: activity.created_at,
+        };
+      });
+
+      return {
+        success: true,
+        data: formattedActivities,
+        message: `Fetched ${formattedActivities.length} recent system activities`,
+        status: 200,
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch recent system activity', error.stack);
+      return {
+        success: false,
+        message: 'Failed to fetch recent system activity',
+        status: 500,
+      };
     }
   }
 }

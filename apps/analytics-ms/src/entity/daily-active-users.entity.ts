@@ -15,4 +15,10 @@ export class DailyActiveUsers {
 
   @Column('int', { default: 0 })
   active_users: number;
+
+  @Column('int', { default: 0 })
+  total_users: number;
+
+  @Column('float', { default: 0 })
+  engagement: number; // Store as percentage (e.g., 24.5)
 }
