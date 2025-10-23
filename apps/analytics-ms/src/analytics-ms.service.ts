@@ -301,7 +301,7 @@ export class AnalyticsMsService {
       this.authClient.send({ cmd: 'auth_get_users_count' }, {}),
     );
 
-    const totalUsers = userCountResponse?.data ?? 0;
+    const totalUsers = userCountResponse?.data?.totalCount ?? 0;
 
     // Calculate engagement percentage using numeric active_users value
     const activeUserCount = dailyRecord.active_users ?? 0;
@@ -422,10 +422,10 @@ export class AnalyticsMsService {
         message: 'Engagement comparison fetched successfully',
       };
     } catch (err) {
-      this.logger.error('Error occured when comparing engagement');
+      this.logger.error('Error occurred when comparing engagement');
       return {
         success: false,
-        message: 'Error occured when comparing engagement',
+        message: 'Error occurred when comparing engagement',
         status: 500,
       };
     }
@@ -872,8 +872,7 @@ export class AnalyticsMsService {
           );
           return {
             success: false,
-            message:
-              'Failed to fetch user information for group activities',
+            message: 'Failed to fetch user information for group activities',
             status: 500,
           };
         }
