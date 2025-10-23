@@ -485,7 +485,7 @@ export class WorkspaceController {
   async deleteGroup(@Param('groupId') groupId: string, @Res() res: any) {
     console.log('Received delete group request at gateway:', groupId);
 
-    const userId = res.user.user_id;
+    const userId = res.user.userId;
     const response = await lastValueFrom(
       this.WorkspaceClient.send({ cmd: 'delete_group' }, { groupId, userId }),
     );
