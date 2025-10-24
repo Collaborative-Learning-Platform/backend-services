@@ -368,7 +368,7 @@ export class DashboardController {
           { cmd: 'get_daily_user_engagement' },
           { 
             start: startDate,
-            end: endDate
+            end: endDate,
           },
         ),
       );
