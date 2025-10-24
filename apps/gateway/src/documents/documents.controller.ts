@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -219,5 +220,31 @@ export class DocumentController {
     }
 
     return res.json(response);
+  }
+
+  // --- Delete Document by ID ---
+  @Delete(':id')
+  async deleteDocument(@Param('id') id: string, @Res() res: Response) {
+    const response = await lastValueFrom(
+      this.DocumentClient.send({ cmd: 'delete_document_by_id' }, id),
+    );
+
+    if (response?.error) {
+      const ret = handleValidationError(response.error);
+      return res.json(ret);
+    }
+
+    if (!response?.success) {
+      return res.json({
+        success: false,
+        message: response.message || 'Failed to delete document',
+        status: response.status || 400,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Document deleted successfully',
+    });
   }
 }

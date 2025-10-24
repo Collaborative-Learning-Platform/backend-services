@@ -10,6 +10,7 @@ import {
   Param,
   Req,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Inject } from '@nestjs/common';
@@ -18,6 +19,7 @@ import { Request, Response } from 'express';
 import * as multer from 'multer';
 import { lastValueFrom } from 'rxjs';
 import { handleValidationError } from '../utils/validationErrorHandler';
+import { AuthGuard } from '../guards/auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -280,6 +282,38 @@ export class AuthController {
     return res.json({
       success: true,
       count: response.data,
+    });
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('change-password')
+  async changePassword(@Req() req: any, @Res() res: Response) {
+    const body = req.body;
+    const data = {
+      ...body,
+      userId: req.user.userId,
+    };
+
+    const response = await lastValueFrom(
+      this.authClient.send({ cmd: 'auth_change_password' }, data),
+    );
+
+    if (response?.error) {
+      const ret = handleValidationError(response.error);
+      return res.json(ret);
+    }
+
+    if (!response?.success) {
+      return res.json({
+        success: false,
+        message: response.message,
+        status: response.status || 400,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: response.message,
     });
   }
 

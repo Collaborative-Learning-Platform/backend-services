@@ -41,6 +41,16 @@ export class AnalyticsMsController {
   }
 
   // =============================================
+  // FETCH DAILY USER ENGAGEMENT FOR A TIME PERIOD
+  // =============================================
+  @MessagePattern({ cmd: 'get_daily_user_engagement' })
+  async fetchDailyUserEngagement(
+    @Payload() dateRange: { start: Date; end: Date },
+  ): Promise<ServiceResponse<any>> {
+    return this.analyticsService.fetchDailyUserEngagementForRange(dateRange);
+  }
+
+  // =============================================
   // FETCH RECENT USER ACTIVITIES FOR A USER
   // =============================================
   @MessagePattern({ cmd: 'get_recent_user_activities' })
@@ -70,7 +80,7 @@ export class AnalyticsMsController {
     @Payload() payload: { user_id: string; limit?: number },
   ): Promise<ServiceResponse<any>> {
     const { user_id, limit } = payload;
-    return this.analyticsService.fetchUserGroupActivities(user_id, limit || 10);
+    return this.analyticsService.fetchUserGroupActivities(user_id, limit || 5);
   }
 
   // =============================================

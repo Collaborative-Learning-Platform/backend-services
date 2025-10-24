@@ -183,20 +183,6 @@ export class DocumentMsService {
         });
       }
 
-      // // Log each group structurally
-      // result.forEach((workspace) => {
-      //   console.log(
-      //     `Workspace: ${workspace.name} (ID: ${workspace.workspaceId})`,
-      //   );
-      //   workspace.groups.forEach((group) => {
-      //     console.log(`  Group: ${group.name} (ID: ${group.groupId})`);
-      //     console.log(`    Documents: ${group.documents.length} document(s)`);
-      //     group.documents.forEach((doc) => {
-      //       console.log(`      Document: ${doc.title} (ID: ${doc.documentId})`);
-      //     });
-      //   });
-      // });
-
       return {
         success: true,
         message: 'Documents grouped by workspace/group fetched successfully',
@@ -287,6 +273,30 @@ export class DocumentMsService {
       return {
         success: false,
         message: 'Error deleting documents: ' + error.message,
+        status: 500,
+      };
+    }
+  }
+
+  async deleteById(documentId: string): Promise<ServiceResponse<any>> {
+    try {
+      const doc = await this.docRepo.findOneBy({ documentId });
+      if (!doc) {
+        return {
+          success: false,
+          message: 'Document not found',
+          status: 404,
+        };
+      }
+      await this.docRepo.remove(doc);
+      return {
+        success: true,
+        message: 'Document deleted successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Error deleting document: ' + error.message,
         status: 500,
       };
     }
