@@ -323,13 +323,13 @@ export class AnalyticsMsService {
 
   // -- Crohn Job to calculate daily active users + engagement for the past day
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron('22 23 * * *')
   async recordDailyActiveUsers() {
     this.logger.log('Running daily active user aggregation job...');
     await this.calculateAndStoreDailyActiveUsers(); // no params → uses yesterday by default
   }
 
-  @Cron('30 0 * * *') // Runs at 12:30 AM every day
+  @Cron('23 23 * * *') // Runs at 12:30 AM every day
   async recordDailyEngagement() {
     this.logger.log('Running daily engagement aggregation job...');
     await this.calculateAndStoreDailyEngagement(); // no params → uses yesterday by default
@@ -1092,6 +1092,7 @@ export class AnalyticsMsService {
           description: activity.description,
           time: this.getTimeDifference(activity.created_at),
           created_at: activity.created_at,
+          metadata: activity.metadata,
         };
       });
 
