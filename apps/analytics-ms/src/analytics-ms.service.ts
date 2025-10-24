@@ -228,13 +228,11 @@ export class AnalyticsMsService {
       where: { date: start },
     });
 
-    const dayLabel = format(start, 'yyyy-MM-dd');
-
     if (dailyRecord) {
       dailyRecord.active_users = activeUserCount;
     } else {
       dailyRecord = this.dailyActiveUsersRepo.create({
-        date: dayLabel,
+        date: start,
         active_users: activeUserCount,
         total_users: 0,
         engagement: 0,
@@ -274,7 +272,7 @@ export class AnalyticsMsService {
       dailyRecord.active_users = activeUserCount;
     } else {
       dailyRecord = this.dailyActiveUsersRepo.create({
-        date: dayLabel,
+        date: start,
         active_users: activeUserCount,
       });
     }
@@ -324,12 +322,6 @@ export class AnalyticsMsService {
   }
 
   // -- Crohn Job to calculate daily active users + engagement for the past day
-
-  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  // async recordDailyActiveUsers() {
-  //   this.logger.log('Running daily active user aggregation job...');
-  //   await this.calculateAndStoreDailyActiveUsers(); // no params → uses yesterday by default
-  // }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async recordDailyActiveUsers() {
