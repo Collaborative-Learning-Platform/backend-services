@@ -493,6 +493,49 @@ export class AuthService {
     }
   }
 
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+          status: 400,
+        };
+      }
+
+      const isMatched = await bcrypt.compare(
+        currentPassword,
+        user.hashed_password,
+      );
+      if (!isMatched) {
+        return {
+          success: false,
+          message: 'Current password is incorrect',
+          status: 401,
+        };
+      }
+
+      user.hashed_password = await bcrypt.hash(newPassword, 10);
+      await this.userRepository.save(user);
+
+      return {
+        success: true,
+        message: 'Password changed successfully',
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: 'Failed to change password',
+        error: err.message,
+        status: 500,
+      };
+    }
+  }
   // ===================================================================================================================
   //User Bulk addition function
 

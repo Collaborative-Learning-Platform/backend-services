@@ -67,6 +67,22 @@ export class AuthController {
     return this.authService.getUsersByIds(data.userIds);
   }
 
+  @MessagePattern({ cmd: 'auth_change_password' })
+  async changePassword(
+    @Payload()
+    data: {
+      userId: string;
+      currentPassword: string;
+      newPassword: string;
+    },
+  ) {
+    return this.authService.changePassword(
+      data.userId,
+      data.currentPassword,
+      data.newPassword,
+    );
+  }
+
   @MessagePattern({ cmd: 'bulk_register_file' })
   async bulkRegisterFile(fileData: { originalname: string; buffer: any }) {
     // Convert TCP-transferred buffer object to real Buffer

@@ -228,16 +228,17 @@ export class AnalyticsMsService {
       where: { date: start },
     });
 
+    const dayLabel = format(start, 'yyyy-MM-dd');
+
     if (dailyRecord) {
       dailyRecord.active_users = activeUserCount;
     } else {
       dailyRecord = this.dailyActiveUsersRepo.create({
+        date: dayLabel,
         active_users: activeUserCount,
         total_users: 0,
         engagement: 0,
       });
-
-      await this.dailyActiveUsersRepo.save(dailyRecord);
     }
 
     await this.dailyActiveUsersRepo.save(dailyRecord);
@@ -273,6 +274,7 @@ export class AnalyticsMsService {
       dailyRecord.active_users = activeUserCount;
     } else {
       dailyRecord = this.dailyActiveUsersRepo.create({
+        date: dayLabel,
         active_users: activeUserCount,
       });
     }
@@ -323,11 +325,20 @@ export class AnalyticsMsService {
 
   // -- Crohn Job to calculate daily active users + engagement for the past day
 
+  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  // async recordDailyActiveUsers() {
+  //   this.logger.log('Running daily active user aggregation job...');
+  //   await this.calculateAndStoreDailyActiveUsers(); // no params → uses yesterday by default
+  // }
+
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async recordDailyActiveUsers() {
     this.logger.log('Running daily active user aggregation job...');
     await this.calculateAndStoreDailyActiveUsers(); // no params → uses yesterday by default
+  }
 
+  @Cron('30 0 * * *') // Runs at 12:30 AM every day
+  async recordDailyEngagement() {
     this.logger.log('Running daily engagement aggregation job...');
     await this.calculateAndStoreDailyEngagement(); // no params → uses yesterday by default
   }
@@ -368,6 +379,55 @@ export class AnalyticsMsService {
       return {
         success: false,
         message: 'Failed to fetch daily active users',
+        status: 500,
+      };
+    }
+  }
+
+  // =============================================
+  // FETCH DAILY USER ENGAGEMENT FOR A DATE RANGE
+  // =============================================
+  async fetchDailyUserEngagementForRange(dateRange: {
+    start: Date;
+    end: Date;
+  }) {
+    try {
+      // Determine range for fetching (up to previous day only)
+      const start = startOfDay(dateRange.start);
+      const end = startOfDay(subDays(new Date(), 1)); // Only up to previous day
+
+      // Ensure we don't fetch future dates
+      const actualEnd = dateRange.end < end ? startOfDay(dateRange.end) : end;
+
+      // Query the dailyActiveUsers table for engagement data
+      const records = await this.dailyActiveUsersRepo.find({
+        where: {
+          date: Between(start, actualEnd),
+        },
+        order: {
+          date: 'ASC',
+        },
+      });
+
+      // Map results to desired JSON format
+      const result = records.map((r) => ({
+        date: format(new Date(r.date), 'yyyy-MM-dd'),
+        active_users: r.active_users,
+        total_users: r.total_users,
+        engagement: r.engagement, // Already stored as percentage
+      }));
+
+      return {
+        success: true,
+        message: 'Daily user engagement fetched successfully',
+        data: result,
+        status: 200,
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch daily user engagement', error.stack);
+      return {
+        success: false,
+        message: 'Failed to fetch daily user engagement',
         status: 500,
       };
     }
@@ -820,6 +880,7 @@ export class AnalyticsMsService {
           .andWhere('activity.activity_type != :login', {
             login: ActivityType.LOGIN,
           })
+          .andWhere('activity.user_id != :user_id', { user_id }) // <-- This line filters out user's own activities
           .orderBy('activity.created_at', 'DESC')
           .limit(limit)
           .getRawMany();
@@ -872,8 +933,7 @@ export class AnalyticsMsService {
           );
           return {
             success: false,
-            message:
-              'Failed to fetch user information for group activities',
+            message: 'Failed to fetch user information for group activities',
             status: 500,
           };
         }
