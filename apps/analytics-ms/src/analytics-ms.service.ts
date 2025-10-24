@@ -232,12 +232,11 @@ export class AnalyticsMsService {
       dailyRecord.active_users = activeUserCount;
     } else {
       dailyRecord = this.dailyActiveUsersRepo.create({
+        date: start,
         active_users: activeUserCount,
         total_users: 0,
         engagement: 0,
       });
-
-      await this.dailyActiveUsersRepo.save(dailyRecord);
     }
 
     await this.dailyActiveUsersRepo.save(dailyRecord);
@@ -273,6 +272,7 @@ export class AnalyticsMsService {
       dailyRecord.active_users = activeUserCount;
     } else {
       dailyRecord = this.dailyActiveUsersRepo.create({
+        date: start,
         active_users: activeUserCount,
       });
     }

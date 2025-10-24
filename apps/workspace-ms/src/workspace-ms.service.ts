@@ -437,7 +437,7 @@ export class WorkspaceMsService {
 
       if (!result.success) {
         return {
-          success: false,
+          success: true,
           message: 'Failed to fetch user details from Auth Service',
           status: 500,
         };

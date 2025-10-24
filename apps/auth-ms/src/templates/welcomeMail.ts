@@ -26,7 +26,7 @@ export const welcomeTemplate = (name: string, email: string, tempPassword: strin
       </p>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="https://yourplatform.com/login" 
+        <a href="https://learniedu.vercel.app/login" 
            style="background-color: #007bff; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 15px; display: inline-block;">
           Go to Login
         </a>

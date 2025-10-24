@@ -285,6 +285,7 @@ export class AuthController {
     });
   }
 
+  //change password for logged in user
   @UseGuards(AuthGuard)
   @Post('change-password')
   async changePassword(@Req() req: any, @Res() res: Response) {
