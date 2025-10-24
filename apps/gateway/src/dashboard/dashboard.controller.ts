@@ -354,4 +354,49 @@ export class DashboardController {
       });
     }
   }
+
+  @Get('dailyEngagement')
+  async getDailyUserEngagement(@Res() res: Response) {
+    try {
+      // Default to last 14 days of data
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 14);
+
+      const response = await lastValueFrom(
+        this.AnalyticsClient.send(
+          { cmd: 'get_daily_user_engagement' },
+          { 
+            start: startDate,
+            end: endDate
+          },
+        ),
+      );
+
+      if (response?.error) {
+        const ret = handleValidationError(response.error);
+        return res.json(ret);
+      }
+
+      if (!response?.success) {
+        return res.json({
+          success: false,
+          message:
+            response.message || 'Failed to retrieve daily user engagement',
+          status: response.status || 400,
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: response.data,
+      });
+    } catch (error) {
+      return res.json({
+        success: false,
+        message: 'Error fetching daily user engagement',
+        error: error.message,
+      });
+    }
+  }
 }

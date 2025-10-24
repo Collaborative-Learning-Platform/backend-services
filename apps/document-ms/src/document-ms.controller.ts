@@ -75,4 +75,11 @@ export class DocumentMsController {
   ): Promise<ServiceResponse<any>> {
     return this.documentMsService.deleteByGroup(groupId);
   }
+
+  @MessagePattern({ cmd: 'delete_document_by_id' })
+  async deleteById(
+    @Payload() documentId: string,
+  ): Promise<ServiceResponse<any>> {
+    return this.documentMsService.deleteById(documentId);
+  }
 }

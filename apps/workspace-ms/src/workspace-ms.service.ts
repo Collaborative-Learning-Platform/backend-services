@@ -331,6 +331,32 @@ export class WorkspaceMsService {
         ],
       });
 
+      // Collect all unique creator user IDs
+      const creatorIds = [
+        ...new Set(userWorkspaces.map((uw) => uw.workspace.createdBy)),
+      ];
+
+      // Fetch creator details from Auth service
+      let creatorsMap = new Map();
+      if (creatorIds.length > 0) {
+        try {
+          const creatorsResponse = await lastValueFrom(
+            this.authService.send(
+              { cmd: 'get_users_by_ids' },
+              { userIds: creatorIds },
+            ),
+          );
+
+          if (creatorsResponse.success && creatorsResponse.users) {
+            creatorsResponse.users.forEach((user) => {
+              creatorsMap.set(user.userId, user.name);
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch creator details:', error);
+        }
+      }
+
       const result = userWorkspaces.map((uw) => {
         const workspace = uw.workspace;
 
@@ -349,6 +375,7 @@ export class WorkspaceMsService {
           description: workspace.description,
           createdAt: workspace.createdAt,
           createdBy: workspace.createdBy,
+          createdByName: creatorsMap.get(workspace.createdBy) || 'Unknown User',
           tutorCount,
           studentCount,
           groupsCount,
